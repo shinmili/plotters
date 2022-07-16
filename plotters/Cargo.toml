@@ -13,7 +13,7 @@ readme = "README.md"
 exclude = ["doc-template", "plotters-doc-data"]
 
 [dependencies]
-num-traits = "0.2.14"
+num-traits = "0.2.15"
 chrono = { version = "0.4.19", optional = true }
 
 [dependencies.plotters-backend]

@@ -23,6 +23,12 @@ impl HasDimension for (u32, u32) {
     }
 }
 
+impl HasDimension for (i32, i32) {
+    fn dim(&self) -> (u32, u32) {
+        (self.0 as u32, self.1 as u32)
+    }
+}
+
 /// The trait that describes a size, it may be a relative size which the
 /// size is determined by the parent size, e.g., 10% of the parent width
 pub trait SizeDesc {

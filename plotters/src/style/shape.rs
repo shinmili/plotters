@@ -92,7 +92,7 @@ impl BackendStyle for ShapeStyle {
         self.color.to_backend_color()
     }
     /// Returns the stroke width.
-    fn stroke_width(&self) -> u32 {
-        self.stroke_width
+    fn stroke_width(&self) -> i32 {
+        self.stroke_width as i32
     }
 }

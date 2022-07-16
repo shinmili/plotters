@@ -1,4 +1,6 @@
-use super::{BackendColor, BackendCoord};
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
+
+use super::BackendColor;
 use std::error::Error;
 
 /// Describes font family.
@@ -145,17 +147,17 @@ impl FontTransform {
     /// - `x`: The x coordinate in pixels before transform
     /// - `y`: The y coordinate in pixels before transform
     /// - **returns**: The coordinate after transform
-    pub fn transform(&self, x: i32, y: i32) -> (i32, i32) {
+    pub fn transform<C: FromPrimitive + ToPrimitive + Signed>(&self, x: C, y: C) -> (C, C) {
         match self {
             FontTransform::None => (x, y),
             FontTransform::Rotate90 => (-y, x),
             FontTransform::Rotate180 => (-x, -y),
             FontTransform::Rotate270 => (y, -x),
             FontTransform::RotateAngle(angle) => {
-                let (x, y) = (x as f32, y as f32);
+                let (x, y) = (x.to_f32().unwrap(), y.to_f32().unwrap());
                 let (sin, cos) = angle.to_radians().sin_cos();
                 let (x, y) = (x * cos - y * sin, x * sin + y * cos);
-                (x.round() as i32, y.round() as i32)
+                (C::from_f32(x).unwrap(), C::from_f32(y).unwrap())
             }
         }
     }
@@ -212,7 +214,7 @@ impl<'a> From<&'a str> for FontStyle {
 /// This trait decouples the detailed implementaiton about the font and the backend code which
 /// wants to perfome some operation on the font.
 ///
-pub trait BackendTextStyle {
+pub trait BackendTextStyle<C> {
     /// The error type of this text style implementation
     type FontError: Error + Sync + Send + 'static;
 
@@ -242,12 +244,12 @@ pub trait BackendTextStyle {
     fn family(&self) -> FontFamily;
 
     #[allow(clippy::type_complexity)]
-    fn layout_box(&self, text: &str) -> Result<((i32, i32), (i32, i32)), Self::FontError>;
+    fn layout_box(&self, text: &str) -> Result<((C, C), (C, C)), Self::FontError>;
 
-    fn draw<E, DrawFunc: FnMut(i32, i32, BackendColor) -> Result<(), E>>(
+    fn draw<E, DrawFunc: FnMut(C, C, BackendColor) -> Result<(), E>>(
         &self,
         text: &str,
-        pos: BackendCoord,
+        pos: (C, C),
         draw: DrawFunc,
     ) -> Result<Result<(), E>, Self::FontError>;
 }

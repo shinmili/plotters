@@ -16,18 +16,20 @@ impl BackendColor {
 }
 
 /// The style data for the backend drawing API
-pub trait BackendStyle {
+pub trait BackendStyle<C = i32> {
     /// Get the color of current style
     fn color(&self) -> BackendColor;
 
     /// Get the stroke width of current style
-    fn stroke_width(&self) -> u32 {
-        1
-    }
+    fn stroke_width(&self) -> C;
 }
 
-impl BackendStyle for BackendColor {
+impl<C: num_traits::One> BackendStyle<C> for BackendColor {
     fn color(&self) -> BackendColor {
         *self
+    }
+
+    fn stroke_width(&self) -> C {
+        C::one()
     }
 }

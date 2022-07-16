@@ -1,4 +1,5 @@
 use super::{FontData, FontFamily, FontStyle, LayoutBox};
+use num_traits::FromPrimitive;
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlElement};
 
@@ -28,7 +29,11 @@ impl FontData for FontDataInternal {
             style.as_str().into(),
         ))
     }
-    fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType> {
+    fn estimate_layout<C: FromPrimitive>(
+        &self,
+        size: f64,
+        text: &str,
+    ) -> Result<LayoutBox<C>, Self::ErrorType> {
         let window = window().unwrap();
         let document = window.document().unwrap();
         let body = document.body().unwrap();
@@ -41,6 +46,9 @@ impl FontData for FontDataInternal {
         let height = elem.offset_height() as i32;
         let width = elem.offset_width() as i32;
         elem.remove();
-        Ok(((0, 0), (width, height)))
+        Ok((
+            (C::from_i32(0).unwrap(), C::from_i32(0).unwrap()),
+            (C::from_i32(width).unwrap(), C::from_i32(height).unwrap()),
+        ))
     }
 }

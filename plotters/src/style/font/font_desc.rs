@@ -1,9 +1,10 @@
-use super::{FontData, FontDataInternal};
+use super::{FontData, FontDataInternal, LayoutBox};
 use crate::style::text_anchor::Pos;
 use crate::style::{Color, TextStyle};
 
 use std::convert::From;
 
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
 pub use plotters_backend::{FontFamily, FontStyle, FontTransform};
 
 /// The error type for the font implementation
@@ -141,7 +142,7 @@ impl<'a> FontDesc<'a> {
     ///
     /// For a TTF type, zero point of the layout box is the left most baseline char of the string
     /// Thus the upper bound of the box is most likely be negative
-    pub fn layout_box(&self, text: &str) -> FontResult<((i32, i32), (i32, i32))> {
+    pub fn layout_box<C: FromPrimitive>(&self, text: &str) -> FontResult<LayoutBox<C>> {
         match &self.data {
             Ok(ref font) => font.estimate_layout(self.size, text),
             Err(e) => Err(e.clone()),
@@ -151,17 +152,26 @@ impl<'a> FontDesc<'a> {
     /// Get the size of the text if rendered in this font.
     /// This is similar to `layout_box` function, but it apply the font transformation
     /// and estimate the overall size of the font
-    pub fn box_size(&self, text: &str) -> FontResult<(u32, u32)> {
-        let ((min_x, min_y), (max_x, max_y)) = self.layout_box(text)?;
-        let (w, h) = self.get_transform().transform(max_x - min_x, max_y - min_y);
-        Ok((w.abs() as u32, h.abs() as u32))
+    pub fn box_size<C: FromPrimitive + ToPrimitive + Signed>(
+        &self,
+        text: &str,
+    ) -> FontResult<(C, C)> {
+        let ((min_x, min_y), (max_x, max_y)) = self.layout_box::<C>(text)?;
+        let (w, h) = self
+            .get_transform()
+            .transform::<C>(max_x - min_x, max_y - min_y);
+        Ok((w, h))
     }
 
     /// Actually draws a font with a drawing function
-    pub fn draw<E, DrawFunc: FnMut(i32, i32, f32) -> Result<(), E>>(
+    pub fn draw<
+        C: Copy + FromPrimitive + ToPrimitive + Signed,
+        E,
+        DrawFunc: FnMut(C, C, f32) -> Result<(), E>,
+    >(
         &self,
         text: &str,
-        (x, y): (i32, i32),
+        (x, y): (C, C),
         draw: DrawFunc,
     ) -> FontResult<Result<(), E>> {
         match &self.data {

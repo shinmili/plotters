@@ -55,7 +55,7 @@ pub struct TextDrawingBackend(Vec<PixelState>);
 impl DrawingBackend for TextDrawingBackend {
     type ErrorType = std::io::Error;
 
-    fn get_size(&self) -> (u32, u32) {
+    fn get_size(&self) -> (i32, i32) {
         (100, 30)
     }
 
@@ -148,7 +148,7 @@ impl DrawingBackend for TextDrawingBackend {
             }
         } else {
             let p: Vec<_> = path.into_iter().collect();
-            let v = rasterizer::polygonize(&p[..], style.stroke_width());
+            let v = rasterizer::polygonize(&p[..], style.stroke_width() as u32);
             return self.fill_polygon(v, &style.color());
         }
         Ok(())
@@ -157,11 +157,11 @@ impl DrawingBackend for TextDrawingBackend {
     fn draw_circle<S: BackendStyle>(
         &mut self,
         center: (i32, i32),
-        radius: u32,
+        radius: i32,
         style: &S,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_circle(self, center, radius, style, fill)
+        rasterizer::draw_circle(self, center, radius as u32, style, fill)
     }
 
     fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = (i32, i32)>>(
@@ -174,15 +174,15 @@ impl DrawingBackend for TextDrawingBackend {
         rasterizer::fill_polygon(self, &vert_buf[..], style)
     }
 
-    fn estimate_text_size<S: BackendTextStyle>(
+    fn estimate_text_size<S: BackendTextStyle<i32>>(
         &self,
         text: &str,
         _: &S,
-    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        Ok((text.len() as u32, 1))
+    ) -> Result<(i32, i32), DrawingErrorKind<Self::ErrorType>> {
+        Ok((text.len() as i32, 1))
     }
 
-    fn draw_text<S: BackendTextStyle>(
+    fn draw_text<S: BackendTextStyle<i32>>(
         &mut self,
         text: &str,
         style: &S,
@@ -214,6 +214,7 @@ impl DrawingBackend for TextDrawingBackend {
         src: &[u8],
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         let (w, h) = self.get_size();
+        let (w, h) = (w as u32, h as u32);
 
         for dx in 0..iw {
             if pos.0 + dx as i32 >= w as i32 {

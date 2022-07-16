@@ -345,7 +345,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
         &self,
         text: &str,
         style: &TextStyle,
-    ) -> Result<(u32, u32), DrawingAreaError<DB>> {
+    ) -> Result<(i32, i32), DrawingAreaError<DB>> {
         self.backend_ops(move |b| b.estimate_text_size(text, style))
     }
 }

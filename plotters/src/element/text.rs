@@ -3,6 +3,7 @@ use std::i32;
 
 use super::{Drawable, PointCollection};
 use crate::style::{FontDesc, FontResult, LayoutBox, TextStyle};
+use num_traits::{FromPrimitive, NumOps, Signed, ToPrimitive};
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 
 /// A single line text element. This can be owned or borrowed string, dependents on
@@ -87,13 +88,16 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
     }
 
     /// Estimate the multi-line text element's dimension
-    pub fn estimate_dimension(&self) -> FontResult<(i32, i32)> {
-        let (mut mx, mut my) = (0, 0);
+    pub fn estimate_dimension<C: Copy + FromPrimitive + ToPrimitive + NumOps + Signed + Ord>(
+        &self,
+    ) -> FontResult<(C, C)> {
+        let zero = C::from_u8(0).unwrap();
+        let (mut mx, mut my) = (zero, zero);
 
-        for ((x, y), t) in self.layout_lines((0, 0)).zip(self.lines.iter()) {
+        for ((x, y), t) in self.layout_lines((zero, zero)).zip(self.lines.iter()) {
             let (dx, dy) = self.style.font.box_size(t.borrow())?;
-            mx = mx.max(x + dx as i32);
-            my = my.max(y + dy as i32);
+            mx = mx.max(x + dx);
+            my = my.max(y + dy);
         }
 
         Ok((mx, my))
@@ -104,14 +108,17 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
         self.coord = coord
     }
 
-    fn layout_lines(&self, (x0, y0): BackendCoord) -> impl Iterator<Item = BackendCoord> {
+    fn layout_lines<C: FromPrimitive + ToPrimitive>(
+        &self,
+        (x0, y0): (C, C),
+    ) -> impl Iterator<Item = (C, C)> {
         let font_height = self.style.font.get_size();
         let actual_line_height = font_height * self.line_height;
         (0..self.lines.len() as u32).map(move |idx| {
-            let y = f64::from(y0) + f64::from(idx) * actual_line_height;
+            let y = y0.to_f64().unwrap() + f64::from(idx) * actual_line_height;
             // TODO: Support text alignment as well, currently everything is left aligned
-            let x = f64::from(x0);
-            (x.round() as i32, y.round() as i32)
+            let x = x0.to_f64().unwrap();
+            (C::from_f64(x).unwrap(), C::from_f64(y).unwrap())
         })
     }
 }
@@ -156,8 +163,8 @@ impl<'a, T: Borrow<str>> MultiLineText<'a, BackendCoord, T> {
     /// Compute the line layout
     pub fn compute_line_layout(&self) -> FontResult<Vec<LayoutBox>> {
         let mut ret = vec![];
-        for ((x, y), t) in self.layout_lines(self.coord).zip(self.lines.iter()) {
-            let (dx, dy) = self.style.font.box_size(t.borrow())?;
+        for ((x, y), t) in self.layout_lines::<i32>(self.coord).zip(self.lines.iter()) {
+            let (dx, dy) = self.style.font.box_size::<i32>(t.borrow())?;
             ret.push(((x, y), (x + dx as i32, y + dy as i32)));
         }
         Ok(ret)

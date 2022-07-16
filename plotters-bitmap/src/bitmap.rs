@@ -145,7 +145,7 @@ impl<'a, P: PixelFormat> BitMapBackend<'a, P> {
     /// - `area_size`: The size of the area
     /// - **returns**: The splitted backends that can be rendered in parallel
     pub fn split(&mut self, area_size: &[u32]) -> Vec<BitMapBackend<P>> {
-        let (w, h) = self.get_size();
+        let (w, h) = self.size;
         let buf = self.get_raw_pixel_buffer();
 
         let base_addr = &mut buf[0] as *mut u8;
@@ -178,8 +178,8 @@ impl<'a, P: PixelFormat> BitMapBackend<'a, P> {
 impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
     type ErrorType = BitMapBackendError;
 
-    fn get_size(&self) -> (u32, u32) {
-        self.size
+    fn get_size(&self) -> (i32, i32) {
+        (self.size.0 as i32, self.size.1 as i32)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<BitMapBackendError>> {
@@ -197,7 +197,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         if !P::can_be_saved() {
             return Ok(());
         }
-        let (w, h) = self.get_size();
+        let (w, h) = self.size;
         match &mut self.target {
             Target::File(path) => {
                 if let Some(img) = BorrowedImage::from_raw(w, h, self.buffer.borrow_buffer()) {
@@ -314,7 +314,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             }
         } else {
             let p: Vec<_> = path.into_iter().collect();
-            let v = rasterizer::polygonize(&p[..], style.stroke_width());
+            let v = rasterizer::polygonize(&p[..], style.stroke_width() as u32);
             return self.fill_polygon(v, &style.color());
         }
         Ok(())
@@ -323,11 +323,11 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
     fn draw_circle<S: BackendStyle>(
         &mut self,
         center: BackendCoord,
-        radius: u32,
+        radius: i32,
         style: &S,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_circle(self, center, radius, style, fill)
+        rasterizer::draw_circle(self, center, radius as u32, style, fill)
     }
 
     fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
@@ -340,7 +340,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         rasterizer::fill_polygon(self, &vert_buf[..], style)
     }
 
-    fn draw_text<TStyle: BackendTextStyle>(
+    fn draw_text<TStyle: BackendTextStyle<i32>>(
         &mut self,
         text: &str,
         style: &TStyle,
@@ -381,6 +381,17 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             Ok(drawing_result) => drawing_result,
             Err(font_error) => Err(DrawingErrorKind::FontError(Box::new(font_error))),
         }
+    }
+
+    fn estimate_text_size<TStyle: BackendTextStyle<i32>>(
+        &self,
+        text: &str,
+        style: &TStyle,
+    ) -> Result<(i32, i32), DrawingErrorKind<Self::ErrorType>> {
+        let layout = style
+            .layout_box(text)
+            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
+        Ok(((layout.1).0 - (layout.0).0, (layout.1).1 - (layout.0).1))
     }
 
     fn blit_bitmap(

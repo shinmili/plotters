@@ -284,8 +284,8 @@ pub fn draw_circle<B: DrawingBackend, S: BackendStyle>(
     }
 
     if !fill && style.stroke_width() != 1 {
-        let inner_radius = radius - (style.stroke_width() / 2).min(radius);
-        radius += style.stroke_width() / 2;
+        let inner_radius = radius - (style.stroke_width() as u32 / 2).min(radius);
+        radius += style.stroke_width() as u32 / 2;
         if inner_radius > 0 {
             return draw_annulus(b, center, (radius, inner_radius), style);
         } else {

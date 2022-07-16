@@ -102,7 +102,7 @@ pub trait DrawingBackend<C = i32>: Sized {
     type ErrorType: Error + Send + Sync;
 
     /// Get the dimension of the drawing backend in pixels
-    fn get_size(&self) -> (u32, u32);
+    fn get_size(&self) -> (C, C);
 
     /// Ensure the backend is ready to draw
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
@@ -127,7 +127,7 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// - `from`: The start point of the line
     /// - `to`: The end point of the line
     /// - `style`: The style of the line
-    fn draw_line<S: BackendStyle>(
+    fn draw_line<S: BackendStyle<C>>(
         &mut self,
         from: (C, C),
         to: (C, C),
@@ -139,7 +139,7 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// - `bottom_right`: The coordinate of the bottom-right corner of the rect
     /// - `style`: The style
     /// - `fill`: If the rectangle should be filled
-    fn draw_rect<S: BackendStyle>(
+    fn draw_rect<S: BackendStyle<C>>(
         &mut self,
         upper_left: (C, C),
         bottom_right: (C, C),
@@ -150,7 +150,7 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// Draw a path on the drawing backend
     /// - `path`: The iterator of key points of the path
     /// - `style`: The style of the path
-    fn draw_path<S: BackendStyle, I: IntoIterator<Item = (C, C)>>(
+    fn draw_path<S: BackendStyle<C>, I: IntoIterator<Item = (C, C)>>(
         &mut self,
         path: I,
         style: &S,
@@ -161,15 +161,15 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// - `radius`: The radius of the circle
     /// - `style`: The style of the shape
     /// - `fill`: If the circle should be filled
-    fn draw_circle<S: BackendStyle>(
+    fn draw_circle<S: BackendStyle<C>>(
         &mut self,
         center: (C, C),
-        radius: u32,
+        radius: C,
         style: &S,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
-    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = (C, C)>>(
+    fn fill_polygon<S: BackendStyle<C>, I: IntoIterator<Item = (C, C)>>(
         &mut self,
         vert: I,
         style: &S,
@@ -179,7 +179,7 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// - `text`: The text to draw
     /// - `style`: The text style
     /// - `pos` : The text anchor point
-    fn draw_text<TStyle: BackendTextStyle>(
+    fn draw_text<TStyle: BackendTextStyle<C>>(
         &mut self,
         text: &str,
         style: &TStyle,
@@ -194,19 +194,11 @@ pub trait DrawingBackend<C = i32>: Sized {
     /// - `text`: The text to estimate
     /// - `font`: The font to estimate
     /// - *Returns* The estimated text size
-    fn estimate_text_size<TStyle: BackendTextStyle>(
+    fn estimate_text_size<TStyle: BackendTextStyle<C>>(
         &self,
         text: &str,
         style: &TStyle,
-    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        let layout = style
-            .layout_box(text)
-            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
-        Ok((
-            ((layout.1).0 - (layout.0).0) as u32,
-            ((layout.1).1 - (layout.0).1) as u32,
-        ))
-    }
+    ) -> Result<(C, C), DrawingErrorKind<Self::ErrorType>>;
 
     /// Blit a bitmap on to the backend.
     ///

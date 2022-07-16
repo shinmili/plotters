@@ -1,4 +1,5 @@
 use super::{FontData, FontFamily, FontStyle, LayoutBox};
+use num_traits::FromPrimitive;
 
 #[derive(Debug, Clone)]
 pub struct FontError;
@@ -27,13 +28,17 @@ impl FontData for FontDataInternal {
     /// Note: This is only a crude estimatation, since for some backend such as SVG, we have no way to
     /// know the real size of the text anyway. Thus using font-kit is an overkill and doesn't helps
     /// the layout.
-    fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType> {
+    fn estimate_layout<C: FromPrimitive>(
+        &self,
+        size: f64,
+        text: &str,
+    ) -> Result<LayoutBox<C>, Self::ErrorType> {
         let em = size / 1.24 / 1.24;
         Ok((
-            (0, -em.round() as i32),
+            (C::from_i32(0).unwrap(), C::from_f64(-em).unwrap()),
             (
-                (em * 0.7 * text.len() as f64).round() as i32,
-                (em * 0.24).round() as i32,
+                C::from_f64(em * 0.7 * text.len() as f64).unwrap(),
+                C::from_f64(em * 0.24).unwrap(),
             ),
         ))
     }

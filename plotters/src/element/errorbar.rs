@@ -200,7 +200,12 @@ impl<K, V, O: ErrorBarOrient<K, V>, DB: DrawingBackend> Drawable<DB> for ErrorBa
 
         backend.draw_line(points[0], points[2], &self.style)?;
 
-        backend.draw_circle(points[1], self.width / 2, &self.style, self.style.filled)?;
+        backend.draw_circle(
+            points[1],
+            self.width as i32 / 2,
+            &self.style,
+            self.style.filled,
+        )?;
 
         Ok(())
     }

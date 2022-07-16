@@ -1,10 +1,12 @@
-/// The implementation of an actual font implementation
-///
-/// This exists since for the image rendering task, we want to use
-/// the system font. But in wasm application, we want the browser
-/// to handle all the font issue.
-///
-/// Thus we need different mechanism for the font implementation
+//! The implementation of an actual font implementation
+//!
+//! This exists since for the image rendering task, we want to use
+//! the system font. But in wasm application, we want the browser
+//! to handle all the font issue.
+//!
+//! Thus we need different mechanism for the font implementation
+
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
 
 #[cfg(all(
     not(all(target_arch = "wasm32", not(target_os = "wasi"))),
@@ -37,15 +39,23 @@ mod font_desc;
 pub use font_desc::*;
 
 /// Represents a box where a text label can be fit
-pub type LayoutBox = ((i32, i32), (i32, i32));
+pub type LayoutBox<C = i32> = ((C, C), (C, C));
 
 pub trait FontData: Clone {
     type ErrorType: Sized + std::error::Error + Clone;
     fn new(family: FontFamily, style: FontStyle) -> Result<Self, Self::ErrorType>;
-    fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType>;
-    fn draw<E, DrawFunc: FnMut(i32, i32, f32) -> Result<(), E>>(
+    fn estimate_layout<C: FromPrimitive>(
         &self,
-        _pos: (i32, i32),
+        size: f64,
+        text: &str,
+    ) -> Result<LayoutBox<C>, Self::ErrorType>;
+    fn draw<
+        C: Copy + FromPrimitive + ToPrimitive + Signed,
+        E,
+        DrawFunc: FnMut(C, C, f32) -> Result<(), E>,
+    >(
+        &self,
+        _pos: (C, C),
         _size: f64,
         _text: &str,
         _draw: DrawFunc,

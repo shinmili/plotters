@@ -28,10 +28,10 @@ pub struct MockedBackend {
     pub num_draw_path_call: u32,
     pub num_fill_polygon_call: u32,
     check_draw_pixel: VecDeque<Box<dyn FnMut(RGBAColor, BackendCoord)>>,
-    check_draw_line: VecDeque<Box<dyn FnMut(RGBAColor, u32, BackendCoord, BackendCoord)>>,
-    check_draw_rect: VecDeque<Box<dyn FnMut(RGBAColor, u32, bool, BackendCoord, BackendCoord)>>,
-    check_draw_path: VecDeque<Box<dyn FnMut(RGBAColor, u32, Vec<BackendCoord>)>>,
-    check_draw_circle: VecDeque<Box<dyn FnMut(RGBAColor, u32, bool, BackendCoord, u32)>>,
+    check_draw_line: VecDeque<Box<dyn FnMut(RGBAColor, i32, BackendCoord, BackendCoord)>>,
+    check_draw_rect: VecDeque<Box<dyn FnMut(RGBAColor, i32, bool, BackendCoord, BackendCoord)>>,
+    check_draw_path: VecDeque<Box<dyn FnMut(RGBAColor, i32, Vec<BackendCoord>)>>,
+    check_draw_circle: VecDeque<Box<dyn FnMut(RGBAColor, i32, bool, BackendCoord, i32)>>,
     check_draw_text: VecDeque<Box<dyn FnMut(RGBAColor, &str, f64, BackendCoord, &str)>>,
     check_fill_polygon: VecDeque<Box<dyn FnMut(RGBAColor, Vec<BackendCoord>)>>,
     drop_check: Option<Box<dyn FnMut(&Self)>>,
@@ -78,17 +78,17 @@ impl MockedBackend {
     }
 
     def_set_checker_func!(check_draw_pixel, RGBAColor, BackendCoord);
-    def_set_checker_func!(check_draw_line, RGBAColor, u32, BackendCoord, BackendCoord);
+    def_set_checker_func!(check_draw_line, RGBAColor, i32, BackendCoord, BackendCoord);
     def_set_checker_func!(
         check_draw_rect,
         RGBAColor,
-        u32,
+        i32,
         bool,
         BackendCoord,
         BackendCoord
     );
-    def_set_checker_func!(check_draw_path, RGBAColor, u32, Vec<BackendCoord>);
-    def_set_checker_func!(check_draw_circle, RGBAColor, u32, bool, BackendCoord, u32);
+    def_set_checker_func!(check_draw_path, RGBAColor, i32, Vec<BackendCoord>);
+    def_set_checker_func!(check_draw_circle, RGBAColor, i32, bool, BackendCoord, i32);
     def_set_checker_func!(check_draw_text, RGBAColor, &str, f64, BackendCoord, &str);
     def_set_checker_func!(drop_check, &Self);
     def_set_checker_func!(check_fill_polygon, RGBAColor, Vec<BackendCoord>);
@@ -113,8 +113,8 @@ impl std::error::Error for MockedError {}
 impl DrawingBackend for MockedBackend {
     type ErrorType = MockedError;
 
-    fn get_size(&self) -> (u32, u32) {
-        (self.width, self.height)
+    fn get_size(&self) -> (i32, i32) {
+        (self.width as i32, self.height as i32)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<MockedError>> {
@@ -209,7 +209,7 @@ impl DrawingBackend for MockedBackend {
     fn draw_circle<S: BackendStyle>(
         &mut self,
         center: BackendCoord,
-        radius: u32,
+        radius: i32,
         style: &S,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
@@ -246,7 +246,7 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_text<S: BackendTextStyle>(
+    fn draw_text<S: BackendTextStyle<i32>>(
         &mut self,
         text: &str,
         style: &S,
@@ -266,13 +266,24 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
+    fn estimate_text_size<TStyle: BackendTextStyle<i32>>(
+        &self,
+        text: &str,
+        style: &TStyle,
+    ) -> Result<(i32, i32), DrawingErrorKind<Self::ErrorType>> {
+        let layout = style
+            .layout_box(text)
+            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
+        Ok(((layout.1).0 - (layout.0).0, (layout.1).1 - (layout.0).1))
+    }
+
     fn blit_bitmap(
         &mut self,
         pos: BackendCoord,
         (iw, ih): (u32, u32),
         src: &[u8],
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (w, h) = self.get_size();
+        let (w, h) = (self.width, self.height);
 
         for dx in 0..iw {
             if pos.0 + dx as i32 >= w as i32 {

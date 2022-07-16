@@ -1,6 +1,7 @@
 use super::palette::Palette;
 use super::ShapeStyle;
 
+use num_traits::One;
 use plotters_backend::{BackendColor, BackendStyle};
 
 use std::marker::PhantomData;
@@ -101,9 +102,13 @@ impl<P: Palette> Color for PaletteColor<P> {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct RGBColor(pub u8, pub u8, pub u8);
 
-impl BackendStyle for RGBAColor {
+impl<C: One> BackendStyle<C> for RGBAColor {
     fn color(&self) -> BackendColor {
         self.to_backend_color()
+    }
+
+    fn stroke_width(&self) -> C {
+        C::one()
     }
 }
 
@@ -116,9 +121,13 @@ impl Color for RGBColor {
         }
     }
 }
-impl BackendStyle for RGBColor {
+impl<C: One> BackendStyle<C> for RGBColor {
     fn color(&self) -> BackendColor {
         self.to_backend_color()
+    }
+
+    fn stroke_width(&self) -> C {
+        C::one()
     }
 }
 

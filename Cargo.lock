@@ -729,6 +729,9 @@ checksum = "d88417318da0eaf0fdcdb51a0ee6c3bed624333bff8f946733049380be67ac1c"
 [[package]]
 name = "plotters-backend"
 version = "0.3.4"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "plotters-bitmap"

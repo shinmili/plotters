@@ -182,8 +182,8 @@ impl<'a> SVGBackend<'a> {
 impl<'a> DrawingBackend for SVGBackend<'a> {
     type ErrorType = Error;
 
-    fn get_size(&self) -> (u32, u32) {
-        self.size
+    fn get_size(&self) -> (i32, i32) {
+        (self.size.0 as i32, self.size.1 as i32)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Error>> {
@@ -353,7 +353,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
     fn draw_circle<S: BackendStyle>(
         &mut self,
         center: BackendCoord,
-        radius: u32,
+        radius: i32,
         style: &S,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
@@ -381,7 +381,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_text<S: BackendTextStyle>(
+    fn draw_text<S: BackendTextStyle<i32>>(
         &mut self,
         text: &str,
         style: &S,
@@ -436,7 +436,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
             ("dy", dy.to_owned()),
             ("text-anchor", text_anchor.to_string()),
             ("font-family", style.family().as_str().to_string()),
-            ("font-size", format!("{}", style.size() / 1.24)),
+            ("font-size", format!("{}", style.size() as f64 / 1.24)),
             ("opacity", make_svg_opacity(color)),
             ("fill", make_svg_color(color)),
         ];
@@ -564,6 +564,17 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
+    fn estimate_text_size<TStyle: BackendTextStyle<i32>>(
+        &self,
+        text: &str,
+        style: &TStyle,
+    ) -> Result<(i32, i32), DrawingErrorKind<Self::ErrorType>> {
+        let layout = style
+            .layout_box(text)
+            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
+        Ok(((layout.1).0 - (layout.0).0, (layout.1).1 - (layout.0).1))
+    }
+
     #[cfg(any(target_arch = "wasm32", not(feature = "image")))]
     fn blit_bitmap(
         &mut self,
@@ -571,7 +582,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         (iw, ih): (u32, u32),
         src: &[u8],
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (w, h) = self.get_size();
+        let (w, h) = self.size;
 
         for dx in 0..iw {
             if pos.0 + dx as i32 >= w as i32 {

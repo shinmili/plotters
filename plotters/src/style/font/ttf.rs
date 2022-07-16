@@ -17,6 +17,7 @@ use font_kit::{
     source::SystemSource,
 };
 
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
 use ttf_parser::{Face, GlyphId};
 
 use pathfinder_geometry::transform2d::Transform2F;
@@ -205,7 +206,11 @@ impl FontData for FontDataInternal {
         Ok(FontDataInternal(load_font_data(family, style)?))
     }
 
-    fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType> {
+    fn estimate_layout<C: FromPrimitive>(
+        &self,
+        size: f64,
+        text: &str,
+    ) -> Result<LayoutBox<C>, Self::ErrorType> {
         let font = &self.0;
         let pixel_per_em = size / 1.24;
         let metrics = font.metrics();
@@ -231,25 +236,35 @@ impl FontData for FontDataInternal {
 
         let x_pixels = x_in_unit * pixel_per_em as f32 / metrics.units_per_em as f32;
 
-        Ok(((0, 0), (x_pixels as i32, pixel_per_em as i32)))
+        Ok((
+            (C::from_u8(0).unwrap(), C::from_u8(0).unwrap()),
+            (
+                C::from_f32(x_pixels).unwrap(),
+                C::from_f64(pixel_per_em).unwrap(),
+            ),
+        ))
     }
 
-    fn draw<E, DrawFunc: FnMut(i32, i32, f32) -> Result<(), E>>(
+    fn draw<
+        C: Copy + FromPrimitive + ToPrimitive + Signed,
+        E,
+        DrawFunc: FnMut(C, C, f32) -> Result<(), E>,
+    >(
         &self,
-        (base_x, mut base_y): (i32, i32),
+        (base_x, mut base_y): (C, C),
         size: f64,
         text: &str,
         mut draw: DrawFunc,
     ) -> Result<Result<(), E>, Self::ErrorType> {
         let em = (size / 1.24) as f32;
 
-        let mut x = base_x as f32;
+        let mut x = base_x.to_f32().unwrap();
         let font = &self.0;
         let metrics = font.metrics();
 
         let canvas_size = size as usize;
 
-        base_y -= (0.24 * em) as i32;
+        base_y = base_y - C::from_f32(0.24 * em).unwrap();
 
         let mut prev = None;
         let place_holder = font.glyph_for_char(PLACEHOLDER_CHAR);
@@ -276,12 +291,16 @@ impl FontData for FontDataInternal {
                     .map_err(|e| FontError::GlyphError(Arc::new(e)))
                     .and(result);
 
-                let base_x = x as i32;
+                let base_x = C::from_f32(x).unwrap();
 
                 for dy in 0..canvas_size {
                     for dx in 0..canvas_size {
                         let alpha = canvas.pixels[dy * canvas_size + dx] as f32 / 255.0;
-                        if let Err(e) = draw(base_x + dx as i32, base_y + dy as i32, alpha) {
+                        if let Err(e) = draw(
+                            base_x + C::from_usize(dx).unwrap(),
+                            base_y + C::from_usize(dy).unwrap(),
+                            alpha,
+                        ) {
                             return Ok(Err(e));
                         }
                     }

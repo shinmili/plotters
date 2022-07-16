@@ -1,9 +1,10 @@
 use super::color::Color;
 use super::font::{FontDesc, FontError, FontFamily, FontStyle, FontTransform};
 use super::size::{HasDimension, SizeDesc};
-use super::BLACK;
+use super::{LayoutBox, BLACK};
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
 pub use plotters_backend::text_anchor;
-use plotters_backend::{BackendColor, BackendCoord, BackendStyle, BackendTextStyle};
+use plotters_backend::{BackendColor, BackendTextStyle};
 
 /// Style of a text
 #[derive(Clone)]
@@ -281,7 +282,7 @@ impl<'a, T: Into<FontDesc<'a>>> From<T> for TextStyle<'a> {
     }
 }
 
-impl<'a> BackendTextStyle for TextStyle<'a> {
+impl<'a, C: Copy + FromPrimitive + ToPrimitive + Signed> BackendTextStyle<C> for TextStyle<'a> {
     type FontError = FontError;
     fn color(&self) -> BackendColor {
         self.color
@@ -300,7 +301,7 @@ impl<'a> BackendTextStyle for TextStyle<'a> {
     }
 
     #[allow(clippy::type_complexity)]
-    fn layout_box(&self, text: &str) -> Result<((i32, i32), (i32, i32)), Self::FontError> {
+    fn layout_box(&self, text: &str) -> Result<LayoutBox<C>, Self::FontError> {
         self.font.layout_box(text)
     }
 
@@ -312,13 +313,13 @@ impl<'a> BackendTextStyle for TextStyle<'a> {
         self.font.get_family()
     }
 
-    fn draw<E, DrawFunc: FnMut(i32, i32, BackendColor) -> Result<(), E>>(
+    fn draw<E, DrawFunc: FnMut(C, C, BackendColor) -> Result<(), E>>(
         &self,
         text: &str,
-        pos: BackendCoord,
+        pos: (C, C),
         mut draw: DrawFunc,
     ) -> Result<Result<(), E>, Self::FontError> {
-        let color = self.color.color();
+        let color = self.color;
         self.font.draw(text, pos, move |x, y, a| {
             let mix_color = color.mix(a as f64);
             draw(x, y, mix_color)

@@ -270,7 +270,7 @@ impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for Circle<Coord, S
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some((x, y)) = points.next() {
-            let size = self.size.in_pixels(&ps).max(0) as u32;
+            let size = self.size.in_pixels(&ps).max(0);
             return backend.draw_circle((x, y), size, &self.style, self.style.filled);
         }
         Ok(())
