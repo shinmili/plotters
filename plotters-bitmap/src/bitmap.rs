@@ -1,5 +1,7 @@
+use plotters_backend::text_anchor::{HPos, VPos};
 use plotters_backend::{
-    BackendColor, BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind,
+    rasterizer, BackendColor, BackendCoord, BackendStyle, BackendTextStyle, DrawingBackend,
+    DrawingErrorKind,
 };
 use std::marker::PhantomData;
 
@@ -287,6 +289,98 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             return Ok(());
         }
         plotters_backend::rasterizer::draw_rect(self, upper_left, bottom_right, style, fill)
+    }
+
+    fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+        &mut self,
+        path: I,
+        style: &S,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        if style.color().alpha == 0.0 {
+            return Ok(());
+        }
+
+        if style.stroke_width() == 1 {
+            let mut begin: Option<BackendCoord> = None;
+            for end in path.into_iter() {
+                if let Some(begin) = begin {
+                    let result = self.draw_line(begin, end, style);
+                    #[allow(clippy::question_mark)]
+                    if result.is_err() {
+                        return result;
+                    }
+                }
+                begin = Some(end);
+            }
+        } else {
+            let p: Vec<_> = path.into_iter().collect();
+            let v = rasterizer::polygonize(&p[..], style.stroke_width());
+            return self.fill_polygon(v, &style.color());
+        }
+        Ok(())
+    }
+
+    fn draw_circle<S: BackendStyle>(
+        &mut self,
+        center: BackendCoord,
+        radius: u32,
+        style: &S,
+        fill: bool,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        rasterizer::draw_circle(self, center, radius, style, fill)
+    }
+
+    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+        &mut self,
+        vert: I,
+        style: &S,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let vert_buf: Vec<_> = vert.into_iter().collect();
+
+        rasterizer::fill_polygon(self, &vert_buf[..], style)
+    }
+
+    fn draw_text<TStyle: BackendTextStyle>(
+        &mut self,
+        text: &str,
+        style: &TStyle,
+        pos: BackendCoord,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let color = style.color();
+        if color.alpha == 0.0 {
+            return Ok(());
+        }
+
+        let layout = style
+            .layout_box(text)
+            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
+        let ((min_x, min_y), (max_x, max_y)) = layout;
+        let width = (max_x - min_x) as i32;
+        let height = (max_y - min_y) as i32;
+        let dx = match style.anchor().h_pos {
+            HPos::Left => 0,
+            HPos::Right => -width,
+            HPos::Center => -width / 2,
+        };
+        let dy = match style.anchor().v_pos {
+            VPos::Top => 0,
+            VPos::Center => -height / 2,
+            VPos::Bottom => -height,
+        };
+        let trans = style.transform();
+        let (w, h) = self.get_size();
+        match style.draw(text, (0, 0), |x, y, color| {
+            let (x, y) = trans.transform(x + dx - min_x, y + dy - min_y);
+            let (x, y) = (pos.0 + x, pos.1 + y);
+            if x >= 0 && x < w as i32 && y >= 0 && y < h as i32 {
+                self.draw_pixel((x, y), color)
+            } else {
+                Ok(())
+            }
+        }) {
+            Ok(drawing_result) => drawing_result,
+            Err(font_error) => Err(DrawingErrorKind::FontError(Box::new(font_error))),
+        }
     }
 
     fn blit_bitmap(

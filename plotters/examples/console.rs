@@ -1,7 +1,7 @@
 use plotters::prelude::*;
 use plotters::style::text_anchor::{HPos, VPos};
 use plotters_backend::{
-    BackendColor, BackendStyle, BackendTextStyle, DrawingBackend, DrawingErrorKind,
+    rasterizer, BackendColor, BackendStyle, BackendTextStyle, DrawingBackend, DrawingErrorKind,
 };
 use std::error::Error;
 
@@ -115,6 +115,65 @@ impl DrawingBackend for TextDrawingBackend {
         plotters_backend::rasterizer::draw_line(self, from, to, style)
     }
 
+    fn draw_rect<S: BackendStyle>(
+        &mut self,
+        upper_left: (i32, i32),
+        bottom_right: (i32, i32),
+        style: &S,
+        fill: bool,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        rasterizer::draw_rect(self, upper_left, bottom_right, style, fill)
+    }
+
+    fn draw_path<S: BackendStyle, I: IntoIterator<Item = (i32, i32)>>(
+        &mut self,
+        path: I,
+        style: &S,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        if style.color().alpha == 0.0 {
+            return Ok(());
+        }
+
+        if style.stroke_width() == 1 {
+            let mut begin: Option<(i32, i32)> = None;
+            for end in path.into_iter() {
+                if let Some(begin) = begin {
+                    let result = self.draw_line(begin, end, style);
+                    #[allow(clippy::question_mark)]
+                    if result.is_err() {
+                        return result;
+                    }
+                }
+                begin = Some(end);
+            }
+        } else {
+            let p: Vec<_> = path.into_iter().collect();
+            let v = rasterizer::polygonize(&p[..], style.stroke_width());
+            return self.fill_polygon(v, &style.color());
+        }
+        Ok(())
+    }
+
+    fn draw_circle<S: BackendStyle>(
+        &mut self,
+        center: (i32, i32),
+        radius: u32,
+        style: &S,
+        fill: bool,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        rasterizer::draw_circle(self, center, radius, style, fill)
+    }
+
+    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = (i32, i32)>>(
+        &mut self,
+        vert: I,
+        style: &S,
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let vert_buf: Vec<_> = vert.into_iter().collect();
+
+        rasterizer::fill_polygon(self, &vert_buf[..], style)
+    }
+
     fn estimate_text_size<S: BackendTextStyle>(
         &self,
         text: &str,
@@ -145,6 +204,41 @@ impl DrawingBackend for TextDrawingBackend {
         for (idx, chr) in (offset..).zip(text.chars()) {
             self.0[idx as usize].update(PixelState::Text(chr));
         }
+        Ok(())
+    }
+
+    fn blit_bitmap(
+        &mut self,
+        pos: (i32, i32),
+        (iw, ih): (u32, u32),
+        src: &[u8],
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let (w, h) = self.get_size();
+
+        for dx in 0..iw {
+            if pos.0 + dx as i32 >= w as i32 {
+                break;
+            }
+            for dy in 0..ih {
+                if pos.1 + dy as i32 >= h as i32 {
+                    break;
+                }
+                // FIXME: This assume we have RGB image buffer
+                let r = src[(dx + dy * w) as usize * 3];
+                let g = src[(dx + dy * w) as usize * 3 + 1];
+                let b = src[(dx + dy * w) as usize * 3 + 2];
+                let color = BackendColor {
+                    alpha: 1.0,
+                    rgb: (r, g, b),
+                };
+                let result = self.draw_pixel((pos.0 + dx as i32, pos.1 + dy as i32), color);
+                #[allow(clippy::question_mark)]
+                if result.is_err() {
+                    return result;
+                }
+            }
+        }
+
         Ok(())
     }
 }

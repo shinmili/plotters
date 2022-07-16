@@ -70,8 +70,6 @@ mod text;
 pub use style::{BackendColor, BackendStyle};
 pub use text::{text_anchor, BackendTextStyle, FontFamily, FontStyle, FontTransform};
 
-use text_anchor::{HPos, VPos};
-
 /// A coordinate in the pixel-based backend. The coordinate follows the framebuffer's convention,
 /// which defines the top-left point as (0, 0).
 pub type BackendCoord = (i32, i32);
@@ -96,14 +94,10 @@ impl<E: Error + Send + Sync> std::fmt::Display for DrawingErrorKind<E> {
 
 impl<E: Error + Send + Sync> Error for DrawingErrorKind<E> {}
 
-///  The drawing backend trait, which implements the low-level drawing APIs.
-///  This trait has a set of default implementation. And the minimal requirement of
-///  implementing a drawing backend is implementing the `draw_pixel` function.
+/// The drawing backend trait, which implements the low-level drawing APIs.
 ///
-///  If the drawing backend supports vector graphics, the other drawing APIs should be
-///  override by the backend specific implementation. Otherwise, the default implementation
-///  will use the pixel-based approach to draw other types of low-level shapes.
-pub trait DrawingBackend: Sized {
+/// - `C`: The type of a coordinate value.
+pub trait DrawingBackend<C = i32>: Sized {
     /// The error type reported by the backend
     type ErrorType: Error + Send + Sync;
 
@@ -125,7 +119,7 @@ pub trait DrawingBackend: Sized {
     /// - `color`: The color of the pixel
     fn draw_pixel(
         &mut self,
-        point: BackendCoord,
+        point: (C, C),
         color: BackendColor,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
@@ -135,12 +129,10 @@ pub trait DrawingBackend: Sized {
     /// - `style`: The style of the line
     fn draw_line<S: BackendStyle>(
         &mut self,
-        from: BackendCoord,
-        to: BackendCoord,
+        from: (C, C),
+        to: (C, C),
         style: &S,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_line(self, from, to, style)
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
     /// Draw a rectangle on the drawing backend
     /// - `upper_left`: The coordinate of the upper-left corner of the rect
@@ -149,45 +141,20 @@ pub trait DrawingBackend: Sized {
     /// - `fill`: If the rectangle should be filled
     fn draw_rect<S: BackendStyle>(
         &mut self,
-        upper_left: BackendCoord,
-        bottom_right: BackendCoord,
+        upper_left: (C, C),
+        bottom_right: (C, C),
         style: &S,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_rect(self, upper_left, bottom_right, style, fill)
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
     /// Draw a path on the drawing backend
     /// - `path`: The iterator of key points of the path
     /// - `style`: The style of the path
-    fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path<S: BackendStyle, I: IntoIterator<Item = (C, C)>>(
         &mut self,
         path: I,
         style: &S,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
-            return Ok(());
-        }
-
-        if style.stroke_width() == 1 {
-            let mut begin: Option<BackendCoord> = None;
-            for end in path.into_iter() {
-                if let Some(begin) = begin {
-                    let result = self.draw_line(begin, end, style);
-                    #[allow(clippy::question_mark)]
-                    if result.is_err() {
-                        return result;
-                    }
-                }
-                begin = Some(end);
-            }
-        } else {
-            let p: Vec<_> = path.into_iter().collect();
-            let v = rasterizer::polygonize(&p[..], style.stroke_width());
-            return self.fill_polygon(v, &style.color());
-        }
-        Ok(())
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
     /// Draw a circle on the drawing backend
     /// - `center`: The center coordinate of the circle
@@ -196,23 +163,17 @@ pub trait DrawingBackend: Sized {
     /// - `fill`: If the circle should be filled
     fn draw_circle<S: BackendStyle>(
         &mut self,
-        center: BackendCoord,
+        center: (C, C),
         radius: u32,
         style: &S,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_circle(self, center, radius, style, fill)
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
-    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = (C, C)>>(
         &mut self,
         vert: I,
         style: &S,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let vert_buf: Vec<_> = vert.into_iter().collect();
-
-        rasterizer::fill_polygon(self, &vert_buf[..], style)
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
     /// Draw a text on the drawing backend
     /// - `text`: The text to draw
@@ -222,44 +183,8 @@ pub trait DrawingBackend: Sized {
         &mut self,
         text: &str,
         style: &TStyle,
-        pos: BackendCoord,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let color = style.color();
-        if color.alpha == 0.0 {
-            return Ok(());
-        }
-
-        let layout = style
-            .layout_box(text)
-            .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
-        let ((min_x, min_y), (max_x, max_y)) = layout;
-        let width = (max_x - min_x) as i32;
-        let height = (max_y - min_y) as i32;
-        let dx = match style.anchor().h_pos {
-            HPos::Left => 0,
-            HPos::Right => -width,
-            HPos::Center => -width / 2,
-        };
-        let dy = match style.anchor().v_pos {
-            VPos::Top => 0,
-            VPos::Center => -height / 2,
-            VPos::Bottom => -height,
-        };
-        let trans = style.transform();
-        let (w, h) = self.get_size();
-        match style.draw(text, (0, 0), |x, y, color| {
-            let (x, y) = trans.transform(x + dx - min_x, y + dy - min_y);
-            let (x, y) = (pos.0 + x, pos.1 + y);
-            if x >= 0 && x < w as i32 && y >= 0 && y < h as i32 {
-                self.draw_pixel((x, y), color)
-            } else {
-                Ok(())
-            }
-        }) {
-            Ok(drawing_result) => drawing_result,
-            Err(font_error) => Err(DrawingErrorKind::FontError(Box::new(font_error))),
-        }
-    }
+        pos: (C, C),
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 
     /// Estimate the size of the horizontal text if rendered on this backend.
     /// This is important because some of the backend may not have font ability.
@@ -293,36 +218,8 @@ pub trait DrawingBackend: Sized {
     /// element that matches the pixel format, but we need to fix this.
     fn blit_bitmap(
         &mut self,
-        pos: BackendCoord,
-        (iw, ih): (u32, u32),
+        pos: (C, C),
+        src_size: (u32, u32),
         src: &[u8],
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (w, h) = self.get_size();
-
-        for dx in 0..iw {
-            if pos.0 + dx as i32 >= w as i32 {
-                break;
-            }
-            for dy in 0..ih {
-                if pos.1 + dy as i32 >= h as i32 {
-                    break;
-                }
-                // FIXME: This assume we have RGB image buffer
-                let r = src[(dx + dy * w) as usize * 3];
-                let g = src[(dx + dy * w) as usize * 3 + 1];
-                let b = src[(dx + dy * w) as usize * 3 + 2];
-                let color = BackendColor {
-                    alpha: 1.0,
-                    rgb: (r, g, b),
-                };
-                let result = self.draw_pixel((pos.0 + dx as i32, pos.1 + dy as i32), color);
-                #[allow(clippy::question_mark)]
-                if result.is_err() {
-                    return result;
-                }
-            }
-        }
-
-        Ok(())
-    }
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
 }

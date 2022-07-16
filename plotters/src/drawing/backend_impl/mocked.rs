@@ -265,6 +265,41 @@ impl DrawingBackend for MockedBackend {
         }
         Ok(())
     }
+
+    fn blit_bitmap(
+        &mut self,
+        pos: BackendCoord,
+        (iw, ih): (u32, u32),
+        src: &[u8],
+    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+        let (w, h) = self.get_size();
+
+        for dx in 0..iw {
+            if pos.0 + dx as i32 >= w as i32 {
+                break;
+            }
+            for dy in 0..ih {
+                if pos.1 + dy as i32 >= h as i32 {
+                    break;
+                }
+                // FIXME: This assume we have RGB image buffer
+                let r = src[(dx + dy * w) as usize * 3];
+                let g = src[(dx + dy * w) as usize * 3 + 1];
+                let b = src[(dx + dy * w) as usize * 3 + 2];
+                let color = BackendColor {
+                    alpha: 1.0,
+                    rgb: (r, g, b),
+                };
+                let result = self.draw_pixel((pos.0 + dx as i32, pos.1 + dy as i32), color);
+                #[allow(clippy::question_mark)]
+                if result.is_err() {
+                    return result;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Drop for MockedBackend {
