@@ -256,7 +256,8 @@ pub trait CoordMapper {
     /// Specifies the output data from the translation
     type Output;
     /// Performs the translation from guest coordinates to backend coordinates
-    fn map<CT: CoordTranslate>(coord_trans: &CT, from: &CT::From, rect: &Rect) -> Self::Output;
+    fn map<CT: CoordTranslate>(coord_trans: &CT, from: &CT::From, rect: &Rect<i32>)
+        -> Self::Output;
 }
 
 /// Used for 2d coordinate transformations.
@@ -264,7 +265,11 @@ pub struct BackendCoordOnly;
 
 impl CoordMapper for BackendCoordOnly {
     type Output = BackendCoord;
-    fn map<CT: CoordTranslate>(coord_trans: &CT, from: &CT::From, rect: &Rect) -> BackendCoord {
+    fn map<CT: CoordTranslate>(
+        coord_trans: &CT,
+        from: &CT::From,
+        rect: &Rect<i32>,
+    ) -> BackendCoord {
         rect.truncate(coord_trans.translate(from))
     }
 }
@@ -281,7 +286,7 @@ impl CoordMapper for BackendCoordAndZ {
     fn map<CT: CoordTranslate>(
         coord_trans: &CT,
         from: &CT::From,
-        rect: &Rect,
+        rect: &Rect<i32>,
     ) -> (BackendCoord, i32) {
         let coord = rect.truncate(coord_trans.translate(from));
         let z = coord_trans.depth(from);

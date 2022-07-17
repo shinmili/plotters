@@ -5,6 +5,7 @@ use crate::element::{CoordMapper, Drawable, PointCollection};
 use crate::style::text_anchor::{HPos, Pos, VPos};
 use crate::style::{Color, SizeDesc, TextStyle};
 
+use num_traits::{FromPrimitive, NumOps};
 /// The abstraction of a drawing area
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 
@@ -12,37 +13,42 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::error::Error;
 use std::iter::{once, repeat};
-use std::ops::Range;
+use std::ops::{Add, Range};
 use std::rc::Rc;
 
 /// The representation of the rectangle in backend canvas
 #[derive(Clone, Debug)]
-pub struct Rect {
-    x0: i32,
-    y0: i32,
-    x1: i32,
-    y1: i32,
+pub struct Rect<C> {
+    x0: C,
+    y0: C,
+    x1: C,
+    y1: C,
 }
 
-impl Rect {
+impl<C: Clone> Rect<C> {
     /// Split the rectangle into a few smaller rectangles
-    fn split<'a, BPI: IntoIterator<Item = &'a i32> + 'a>(
+    fn split<'a, BPI: IntoIterator<Item = &'a C> + 'a>(
         &'a self,
         break_points: BPI,
         vertical: bool,
-    ) -> impl Iterator<Item = Rect> + 'a {
-        let (mut x0, mut y0) = (self.x0, self.y0);
-        let (full_x, full_y) = (self.x1, self.y1);
+    ) -> impl Iterator<Item = Rect<C>> + 'a {
+        let (mut x0, mut y0) = (self.x0.clone(), self.y0.clone());
+        let (full_x, full_y) = (self.x1.clone(), self.y1.clone());
         break_points
             .into_iter()
             .chain(once(if vertical { &self.y1 } else { &self.x1 }))
-            .map(move |&p| {
-                let x1 = if vertical { full_x } else { p };
-                let y1 = if vertical { p } else { full_y };
-                let ret = Rect { x0, y0, x1, y1 };
+            .map(move |p| {
+                let x1 = (if vertical { &full_x } else { p }).clone();
+                let y1 = (if vertical { p } else { &full_y }).clone();
+                let ret = Rect {
+                    x0: x0.clone(),
+                    y0: y0.clone(),
+                    x1: x1.clone(),
+                    y1: y1.clone(),
+                };
 
                 if vertical {
-                    y0 = y1
+                    y0 = y1;
                 } else {
                     x0 = x1;
                 }
@@ -50,66 +56,74 @@ impl Rect {
                 ret
             })
     }
+}
 
+impl<C: Clone + Ord + FromPrimitive + NumOps> Rect<C> {
     /// Evenly split the rectangle to a row * col mesh
-    fn split_evenly(&self, (row, col): (usize, usize)) -> impl Iterator<Item = Rect> + '_ {
-        fn compute_evenly_split(from: i32, to: i32, n: usize, idx: usize) -> i32 {
-            let size = (to - from) as usize;
-            from + idx as i32 * (size / n) as i32 + idx.min(size % n) as i32
+    fn split_evenly(&self, (row, col): (usize, usize)) -> impl Iterator<Item = Rect<C>> + '_ {
+        fn compute_evenly_split<C: Clone + Ord + FromPrimitive + NumOps>(
+            from: C,
+            to: C,
+            n: usize,
+            idx: usize,
+        ) -> C {
+            let size = to - from.clone();
+            let idx = C::from_usize(idx).unwrap();
+            let n = C::from_usize(n).unwrap();
+            from + idx.clone() * (size.clone() / n.clone()) + idx.min(size % n)
         }
+
         (0..row)
             .flat_map(move |x| repeat(x).zip(0..col))
             .map(move |(ri, ci)| Self {
-                y0: compute_evenly_split(self.y0, self.y1, row, ri),
-                y1: compute_evenly_split(self.y0, self.y1, row, ri + 1),
-                x0: compute_evenly_split(self.x0, self.x1, col, ci),
-                x1: compute_evenly_split(self.x0, self.x1, col, ci + 1),
+                y0: compute_evenly_split(self.y0.clone(), self.y1.clone(), row, ri),
+                y1: compute_evenly_split(self.y0.clone(), self.y1.clone(), row, ri + 1),
+                x0: compute_evenly_split(self.x0.clone(), self.x1.clone(), col, ci),
+                x1: compute_evenly_split(self.x0.clone(), self.x1.clone(), col, ci + 1),
             })
     }
+}
 
+impl<C: Clone + Ord + Add<Output = C>> Rect<C> {
     /// Evenly the rectangle into a grid with arbitrary breaks; return a rect iterator.
     fn split_grid(
         &self,
-        x_breaks: impl Iterator<Item = i32>,
-        y_breaks: impl Iterator<Item = i32>,
-    ) -> impl Iterator<Item = Rect> {
-        let mut xs = vec![self.x0, self.x1];
-        let mut ys = vec![self.y0, self.y1];
-        xs.extend(x_breaks.map(|v| v + self.x0));
-        ys.extend(y_breaks.map(|v| v + self.y0));
+        x_breaks: impl Iterator<Item = C>,
+        y_breaks: impl Iterator<Item = C>,
+    ) -> impl Iterator<Item = Rect<C>> {
+        let mut xs = vec![self.x0.clone(), self.x1.clone()];
+        let mut ys = vec![self.y0.clone(), self.y1.clone()];
+        xs.extend(x_breaks.map(|v| v + self.x0.clone()));
+        ys.extend(y_breaks.map(|v| v + self.y0.clone()));
 
         xs.sort_unstable();
         ys.sort_unstable();
 
-        let xsegs: Vec<_> = xs
-            .iter()
-            .zip(xs.iter().skip(1))
-            .map(|(a, b)| (*a, *b))
-            .collect();
+        let xsegs: Vec<_> = xs.iter().cloned().zip(xs.iter().cloned().skip(1)).collect();
 
-        // Justify: this is actually needed. Because we need to return a iterator that have 
+        // Justify: this is actually needed. Because we need to return a iterator that have
         // static life time, thus we need to copy the value to a buffer and then turn the buffer
         // into a iterator.
         #[allow(clippy::needless_collect)]
-        let ysegs: Vec<_> = ys
-            .iter()
-            .zip(ys.iter().skip(1))
-            .map(|(a, b)| (*a, *b))
-            .collect();
+        let ysegs: Vec<_> = ys.iter().cloned().zip(ys.iter().cloned().skip(1)).collect();
 
-        ysegs
-            .into_iter()
-            .flat_map(move |(y0, y1)| {
-                xsegs
-                    .clone()
-                    .into_iter()
-                    .map(move |(x0, x1)| Self { x0, y0, x1, y1 })
+        ysegs.into_iter().flat_map(move |(y0, y1)| {
+            xsegs.clone().into_iter().map(move |(x0, x1)| {
+                let y0 = y0.clone();
+                let y1 = y1.clone();
+                Self { x0, y0, x1, y1 }
             })
+        })
     }
+}
 
+impl<C: Clone + Ord> Rect<C> {
     /// Make the coordinate in the range of the rectangle
-    pub fn truncate(&self, p: (i32, i32)) -> (i32, i32) {
-        (p.0.min(self.x1).max(self.x0), p.1.min(self.y1).max(self.y0))
+    pub fn truncate(&self, p: (C, C)) -> (C, C) {
+        (
+            p.0.min(self.x1.clone()).max(self.x0.clone()),
+            p.1.min(self.y1.clone()).max(self.y0.clone()),
+        )
     }
 }
 
@@ -120,7 +134,7 @@ impl Rect {
 ///     3. Element based drawing - drawing area provides the environment the element can be drawn onto it.
 pub struct DrawingArea<DB: DrawingBackend, CT: CoordTranslate> {
     backend: Rc<RefCell<DB>>,
-    rect: Rect,
+    rect: Rect<i32>,
     coord: CT,
 }
 
