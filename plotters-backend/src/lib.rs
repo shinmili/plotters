@@ -78,14 +78,14 @@ pub type BackendCoord = (i32, i32);
 
 /// The error produced by a drawing backend.
 #[derive(Debug)]
-pub enum DrawingErrorKind<E: Error + Send + Sync> {
+pub enum DrawingErrorKind<E> {
     /// A drawing backend error
     DrawingError(E),
     /// A font rendering error
     FontError(Box<dyn Error + Send + Sync + 'static>),
 }
 
-impl<E: Error + Send + Sync> std::fmt::Display for DrawingErrorKind<E> {
+impl<E: std::fmt::Display> std::fmt::Display for DrawingErrorKind<E> {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             DrawingErrorKind::DrawingError(e) => write!(fmt, "Drawing backend error: {}", e),
@@ -94,7 +94,7 @@ impl<E: Error + Send + Sync> std::fmt::Display for DrawingErrorKind<E> {
     }
 }
 
-impl<E: Error + Send + Sync> Error for DrawingErrorKind<E> {}
+impl<E: Error> Error for DrawingErrorKind<E> {}
 
 ///  The drawing backend trait, which implements the low-level drawing APIs.
 ///  This trait has a set of default implementation. And the minimal requirement of
