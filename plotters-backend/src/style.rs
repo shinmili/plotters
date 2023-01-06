@@ -16,18 +16,19 @@ impl BackendColor {
 }
 
 /// The style data for the backend drawing API
-pub trait BackendStyle {
-    /// Get the color of current style
-    fn color(&self) -> BackendColor;
-
-    /// Get the stroke width of current style
-    fn stroke_width(&self) -> u32 {
-        1
-    }
+#[derive(Clone, Copy)]
+pub struct BackendStyle {
+    /// The color of current style
+    pub color: BackendColor,
+    /// The stroke width of current style
+    pub stroke_width: u32,
 }
 
-impl BackendStyle for BackendColor {
-    fn color(&self) -> BackendColor {
-        *self
+impl From<BackendColor> for BackendStyle {
+    fn from(value: BackendColor) -> Self {
+        BackendStyle {
+            color: value,
+            stroke_width: 1,
+        }
     }
 }

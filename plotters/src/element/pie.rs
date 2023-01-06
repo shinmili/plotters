@@ -109,18 +109,14 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
         let radian_increment = PI / 180.0 / self.radius.sqrt() * 2.0;
         let mut perc_labels = Vec::new();
         for (index, slice) in self.sizes.iter().enumerate() {
-            let slice_style =
-                self.colors
-                    .get(index)
-                    .ok_or_else(|| DrawingErrorKind::FontError(Box::new(
-                        PieError::LengthMismatch,
-                    )))?;
+            let slice_style = self
+                .colors
+                .get(index)
+                .ok_or_else(|| DrawingErrorKind::FontError(Box::new(PieError::LengthMismatch)))?;
             let label = self
                 .labels
                 .get(index)
-                .ok_or_else(|| DrawingErrorKind::FontError(Box::new(
-                    PieError::LengthMismatch,
-                )))?;
+                .ok_or_else(|| DrawingErrorKind::FontError(Box::new(PieError::LengthMismatch)))?;
             // start building wedge line against the previous edge
             let mut points = vec![*self.center];
             let ratio = slice / self.total;
@@ -148,7 +144,7 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
             // draw wedge
             // TODO: Currently the backend doesn't have API to draw an arc. We need add that in the
             // future
-            backend.fill_polygon(points, slice_style)?;
+            backend.fill_polygon(points, *slice_style)?;
 
             // label coords from the middle
             let mut mid_coord =

@@ -69,10 +69,10 @@ impl Ord for Edge {
     }
 }
 
-pub fn fill_polygon<DB: DrawingBackend, S: BackendStyle>(
+pub fn fill_polygon<DB: DrawingBackend>(
     back: &mut DB,
     vertices: &[BackendCoord],
-    style: &S,
+    style: BackendStyle,
 ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
     if let Some((x_span, y_span)) =
         vertices
@@ -204,29 +204,29 @@ pub fn fill_polygon<DB: DrawingBackend, S: BackendStyle>(
                             check_result!(back.draw_line(
                                 (sweep_line, from.ceil() as i32),
                                 (sweep_line, to.floor() as i32),
-                                &style.color(),
+                                style.color,
                             ));
                             check_result!(back.draw_pixel(
                                 (sweep_line, from.floor() as i32),
-                                style.color().mix(from.ceil() - from),
+                                style.color.mix(from.ceil() - from),
                             ));
                             check_result!(back.draw_pixel(
                                 (sweep_line, to.ceil() as i32),
-                                style.color().mix(to - to.floor()),
+                                style.color.mix(to - to.floor()),
                             ));
                         } else {
                             check_result!(back.draw_line(
                                 (from.ceil() as i32, sweep_line),
                                 (to.floor() as i32, sweep_line),
-                                &style.color(),
+                                style.color,
                             ));
                             check_result!(back.draw_pixel(
                                 (from.floor() as i32, sweep_line),
-                                style.color().mix(from.ceil() - from),
+                                style.color.mix(from.ceil() - from),
                             ));
                             check_result!(back.draw_pixel(
                                 (to.ceil() as i32, sweep_line),
-                                style.color().mix(to.floor() - to),
+                                style.color.mix(to.floor() - to),
                             ));
                         }
 

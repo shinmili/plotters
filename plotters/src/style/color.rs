@@ -101,9 +101,12 @@ impl<P: Palette> Color for PaletteColor<P> {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct RGBColor(pub u8, pub u8, pub u8);
 
-impl BackendStyle for RGBAColor {
-    fn color(&self) -> BackendColor {
-        self.to_backend_color()
+impl From<RGBAColor> for BackendStyle {
+    fn from(value: RGBAColor) -> Self {
+        BackendStyle {
+            color: value.to_backend_color(),
+            stroke_width: 1,
+        }
     }
 }
 
@@ -116,9 +119,13 @@ impl Color for RGBColor {
         }
     }
 }
-impl BackendStyle for RGBColor {
-    fn color(&self) -> BackendColor {
-        self.to_backend_color()
+
+impl From<RGBColor> for BackendStyle {
+    fn from(value: RGBColor) -> Self {
+        BackendStyle {
+            color: value.to_backend_color(),
+            stroke_width: 1,
+        }
     }
 }
 

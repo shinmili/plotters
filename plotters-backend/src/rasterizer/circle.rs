@@ -83,9 +83,9 @@ fn draw_part_c<
     Ok(())
 }
 
-fn draw_sweep_line<B: DrawingBackend, S: BackendStyle>(
+fn draw_sweep_line<B: DrawingBackend>(
     b: &mut B,
-    style: &S,
+    style: BackendStyle,
     (x0, y0): BackendCoord,
     (dx, dy): (i32, i32),
     p0: i32,
@@ -104,28 +104,28 @@ fn draw_sweep_line<B: DrawingBackend, S: BackendStyle>(
         check_result!(b.draw_line(
             (p0 + x0, s.ceil() as i32 + y0),
             (p0 + x0, e.floor() as i32 + y0),
-            &style.color()
+            style.color
         ));
-        check_result!(b.draw_pixel((p0 + x0, s.ceil() as i32 + y0 - 1), style.color().mix(vs)));
-        check_result!(b.draw_pixel((p0 + x0, e.floor() as i32 + y0 + 1), style.color().mix(ve)));
+        check_result!(b.draw_pixel((p0 + x0, s.ceil() as i32 + y0 - 1), style.color.mix(vs)));
+        check_result!(b.draw_pixel((p0 + x0, e.floor() as i32 + y0 + 1), style.color.mix(ve)));
     } else {
         check_result!(b.draw_line(
             (s.ceil() as i32 + x0, p0 + y0),
             (e.floor() as i32 + x0, p0 + y0),
-            &style.color()
+            style.color
         ));
-        check_result!(b.draw_pixel((s.ceil() as i32 + x0 - 1, p0 + y0), style.color().mix(vs)));
-        check_result!(b.draw_pixel((e.floor() as i32 + x0 + 1, p0 + y0), style.color().mix(ve)));
+        check_result!(b.draw_pixel((s.ceil() as i32 + x0 - 1, p0 + y0), style.color.mix(vs)));
+        check_result!(b.draw_pixel((e.floor() as i32 + x0 + 1, p0 + y0), style.color.mix(ve)));
     }
 
     Ok(())
 }
 
-fn draw_annulus<B: DrawingBackend, S: BackendStyle>(
+fn draw_annulus<B: DrawingBackend>(
     b: &mut B,
     center: BackendCoord,
     radius: (u32, u32),
-    style: &S,
+    style: BackendStyle,
 ) -> Result<(), DrawingErrorKind<B::ErrorType>> {
     let a0 = ((radius.0 - radius.1) as f64).min(radius.0 as f64 * (1.0 - 1.0 / (2f64).sqrt()));
     let a1 = (radius.0 as f64 - a0 - radius.1 as f64).max(0.0);
@@ -174,23 +174,23 @@ fn draw_annulus<B: DrawingBackend, S: BackendStyle>(
                 check_result!(b.draw_line(
                     (center.0 + h, center.1 + f),
                     (center.0 + h, center.1 + t),
-                    &style.color()
+                    style.color
                 ));
                 check_result!(b.draw_line(
                     (center.0 - h, center.1 + f),
                     (center.0 - h, center.1 + t),
-                    &style.color()
+                    style.color
                 ));
 
                 check_result!(b.draw_line(
                     (center.0 + f + 1, center.1 + h),
                     (center.0 + t - 1, center.1 + h),
-                    &style.color()
+                    style.color
                 ));
                 check_result!(b.draw_line(
                     (center.0 + f + 1, center.1 - h),
                     (center.0 + t - 1, center.1 - h),
-                    &style.color()
+                    style.color
                 ));
 
                 Ok(())
@@ -230,62 +230,62 @@ fn draw_annulus<B: DrawingBackend, S: BackendStyle>(
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 - d_inner),
         (center.0 - d_outter, center.1 - d_outter),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 - d_inner),
         (center.0 + d_outter, center.1 - d_outter),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 + d_inner),
         (center.0 - d_outter, center.1 + d_outter),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_outter, center.1 + d_outter),
-        &style.color()
+        style.color
     ));
 
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 + d_inner),
         (center.0 - d_outter_actually, center.1 + d_inner),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 - d_inner),
         (center.0 + d_inner, center.1 - d_outter_actually),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_inner, center.1 + d_outter_actually),
-        &style.color()
+        style.color
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_outter_actually, center.1 + d_inner),
-        &style.color()
+        style.color
     ));
 
     Ok(())
 }
 
-pub fn draw_circle<B: DrawingBackend, S: BackendStyle>(
+pub fn draw_circle<B: DrawingBackend>(
     b: &mut B,
     center: BackendCoord,
     mut radius: u32,
-    style: &S,
+    style: BackendStyle,
     mut fill: bool,
 ) -> Result<(), DrawingErrorKind<B::ErrorType>> {
-    if style.color().alpha == 0.0 {
+    if style.color.alpha == 0.0 {
         return Ok(());
     }
 
-    if !fill && style.stroke_width() != 1 {
-        let inner_radius = radius - (style.stroke_width() / 2).min(radius);
-        radius += style.stroke_width() / 2;
+    if !fill && style.stroke_width != 1 {
+        let inner_radius = radius - (style.stroke_width / 2).min(radius);
+        radius += style.stroke_width / 2;
         if inner_radius > 0 {
             return draw_annulus(b, center, (radius, inner_radius), style);
         } else {
@@ -321,21 +321,21 @@ pub fn draw_circle<B: DrawingBackend, S: BackendStyle>(
         let bottom = center.1 + lx.floor() as i32;
 
         if fill {
-            check_result!(b.draw_line((left, y), (right, y), &style.color()));
-            check_result!(b.draw_line((x, top), (x, up - 1), &style.color()));
-            check_result!(b.draw_line((x, down + 1), (x, bottom), &style.color()));
+            check_result!(b.draw_line((left, y), (right, y), style.color));
+            check_result!(b.draw_line((x, top), (x, up - 1), style.color));
+            check_result!(b.draw_line((x, down + 1), (x, bottom), style.color));
         } else {
-            check_result!(b.draw_pixel((left, y), style.color().mix(1.0 - v)));
-            check_result!(b.draw_pixel((right, y), style.color().mix(1.0 - v)));
+            check_result!(b.draw_pixel((left, y), style.color.mix(1.0 - v)));
+            check_result!(b.draw_pixel((right, y), style.color.mix(1.0 - v)));
 
-            check_result!(b.draw_pixel((x, top), style.color().mix(1.0 - v)));
-            check_result!(b.draw_pixel((x, bottom), style.color().mix(1.0 - v)));
+            check_result!(b.draw_pixel((x, top), style.color.mix(1.0 - v)));
+            check_result!(b.draw_pixel((x, bottom), style.color.mix(1.0 - v)));
         }
 
-        check_result!(b.draw_pixel((left - 1, y), style.color().mix(v)));
-        check_result!(b.draw_pixel((right + 1, y), style.color().mix(v)));
-        check_result!(b.draw_pixel((x, top - 1), style.color().mix(v)));
-        check_result!(b.draw_pixel((x, bottom + 1), style.color().mix(v)));
+        check_result!(b.draw_pixel((left - 1, y), style.color.mix(v)));
+        check_result!(b.draw_pixel((right + 1, y), style.color.mix(v)));
+        check_result!(b.draw_pixel((x, top - 1), style.color.mix(v)));
+        check_result!(b.draw_pixel((x, bottom + 1), style.color.mix(v)));
     }
 
     Ok(())

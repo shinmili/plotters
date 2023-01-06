@@ -105,7 +105,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for PathElement<Coord> {
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
-        backend.draw_path(points, &self.style)
+        backend.draw_path(points, self.style)
     }
 }
 
@@ -184,7 +184,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Rectangle<Coord> {
                 b.1 -= self.margin.1 as i32;
                 a.0 += self.margin.2 as i32;
                 b.0 -= self.margin.3 as i32;
-                backend.draw_rect(a, b, &self.style, self.style.filled)
+                backend.draw_rect(a, b, self.style, self.style.filled)
             }
             _ => Ok(()),
         }
@@ -271,7 +271,7 @@ impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for Circle<Coord, S
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some((x, y)) = points.next() {
             let size = self.size.in_pixels(&ps).max(0) as u32;
-            return backend.draw_circle((x, y), size, &self.style, self.style.filled);
+            return backend.draw_circle((x, y), size, self.style, self.style.filled);
         }
         Ok(())
     }
@@ -330,7 +330,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Polygon<Coord> {
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
-        backend.fill_polygon(points, &self.style.color.to_backend_color())
+        backend.fill_polygon(points, self.style.color.to_backend_color())
     }
 }
 

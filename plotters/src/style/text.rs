@@ -3,7 +3,7 @@ use super::font::{FontDesc, FontError, FontFamily, FontStyle, FontTransform};
 use super::size::{HasDimension, SizeDesc};
 use super::BLACK;
 pub use plotters_backend::text_anchor;
-use plotters_backend::{BackendColor, BackendCoord, BackendStyle, BackendTextStyle};
+use plotters_backend::{BackendColor, BackendCoord, BackendTextStyle};
 
 /// Style of a text
 #[derive(Clone)]
@@ -318,7 +318,7 @@ impl<'a> BackendTextStyle for TextStyle<'a> {
         pos: BackendCoord,
         mut draw: DrawFunc,
     ) -> Result<Result<(), E>, Self::FontError> {
-        let color = self.color.color();
+        let color = self.color;
         self.font.draw(text, pos, move |x, y, a| {
             let mix_color = color.mix(a as f64);
             draw(x, y, mix_color)
