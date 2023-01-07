@@ -36,7 +36,7 @@ pub fn draw_line<DB: DrawingBackend>(
             trans.swap(0, 1);
         }
 
-        return back.fill_polygon(vertices, style);
+        return back.fill_polygon(&vertices[..], style);
     }
 
     if from.0 == to.0 {

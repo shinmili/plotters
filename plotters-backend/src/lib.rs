@@ -162,9 +162,9 @@ pub trait DrawingBackend: Sized {
     /// Draw a path on the drawing backend
     /// - `path`: The iterator of key points of the path
     /// - `style`: The style of the path
-    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path(
         &mut self,
-        path: I,
+        path: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         if style.color.alpha == 0.0 {
@@ -173,7 +173,7 @@ pub trait DrawingBackend: Sized {
 
         if style.stroke_width == 1 {
             let mut begin: Option<BackendCoord> = None;
-            for end in path.into_iter() {
+            for &end in path {
                 if let Some(begin) = begin {
                     let result = self.draw_line(begin, end, style);
                     #[allow(clippy::question_mark)]
@@ -184,9 +184,8 @@ pub trait DrawingBackend: Sized {
                 begin = Some(end);
             }
         } else {
-            let p: Vec<_> = path.into_iter().collect();
-            let v = rasterizer::polygonize(&p[..], style.stroke_width);
-            return self.fill_polygon(v, style.color.into());
+            let v = rasterizer::polygonize(path, style.stroke_width);
+            return self.fill_polygon(&v[..], style.color.into());
         }
         Ok(())
     }
@@ -206,14 +205,12 @@ pub trait DrawingBackend: Sized {
         rasterizer::draw_circle(self, center, radius, style.into(), fill)
     }
 
-    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon(
         &mut self,
-        vert: I,
+        vert: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let vert_buf: Vec<_> = vert.into_iter().collect();
-
-        rasterizer::fill_polygon(self, &vert_buf[..], style.into())
+        rasterizer::fill_polygon(self, vert, style.into())
     }
 
     /// Draw a text on the drawing backend

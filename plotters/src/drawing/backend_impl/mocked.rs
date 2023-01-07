@@ -187,9 +187,9 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path(
         &mut self,
-        path: I,
+        path: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
@@ -197,7 +197,11 @@ impl DrawingBackend for MockedBackend {
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_draw_path.pop_front() {
-            checker(color, style.stroke_width, path.into_iter().collect());
+            checker(
+                color,
+                style.stroke_width,
+                path.into_iter().copied().collect(),
+            );
 
             if self.check_draw_path.is_empty() {
                 self.check_draw_path.push_back(checker);
@@ -227,9 +231,9 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon(
         &mut self,
-        path: I,
+        path: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
@@ -237,7 +241,7 @@ impl DrawingBackend for MockedBackend {
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_fill_polygon.pop_front() {
-            checker(color, path.into_iter().collect());
+            checker(color, path.into_iter().copied().collect());
 
             if self.check_fill_polygon.is_empty() {
                 self.check_fill_polygon.push_back(checker);

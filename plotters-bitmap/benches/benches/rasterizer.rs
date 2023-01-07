@@ -192,7 +192,7 @@ fn fill_hexagon(c: &mut Criterion) {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
             let mut root = BitMapBackend::with_buffer(&mut buffer, (W, H));
-            root.fill_polygon(vert.clone(), RED.into()).unwrap();
+            root.fill_polygon(&vert[..], RED.into()).unwrap();
         })
     });
 
@@ -201,7 +201,7 @@ fn fill_hexagon(c: &mut Criterion) {
         b.iter(|| {
             let mut root =
                 BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
-            root.fill_polygon(vert.clone(), RED.into()).unwrap();
+            root.fill_polygon(&vert[..], RED.into()).unwrap();
         })
     });
 }

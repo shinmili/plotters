@@ -94,13 +94,10 @@ impl<X, Y, Z, DB: DrawingBackend> Drawable<DB, BackendCoordAndZ> for Cuboid<X, Y
         polygon.sort_by_cached_key(|t| std::cmp::Reverse(t[0].1 + t[1].1 + t[2].1 + t[3].1));
 
         for p in polygon {
-            backend.fill_polygon(p.iter().map(|(coord, _)| *coord), self.face_style.into())?;
-            backend.draw_path(
-                p.iter()
-                    .map(|(coord, _)| *coord)
-                    .chain(std::iter::once(p[0].0)),
-                self.edge_style.into(),
-            )?;
+            let path: Vec<(i32, i32)> = p.iter().map(|&(coord, _)| coord).chain([p[0].0]).collect();
+
+            backend.fill_polygon(&path[0..4], self.face_style.into())?;
+            backend.draw_path(&path[..], self.edge_style.into())?;
         }
 
         Ok(())

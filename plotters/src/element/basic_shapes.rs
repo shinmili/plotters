@@ -105,7 +105,8 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for PathElement<Coord> {
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
-        backend.draw_path(points, self.style.into())
+        let points: Vec<_> = points.collect();
+        backend.draw_path(&points[..], self.style.into())
     }
 }
 
@@ -330,7 +331,8 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Polygon<Coord> {
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
-        backend.fill_polygon(points, self.style.color.to_backend_color().into())
+        let points: Vec<_> = points.collect();
+        backend.fill_polygon(&points[..], self.style.color.to_backend_color().into())
     }
 }
 

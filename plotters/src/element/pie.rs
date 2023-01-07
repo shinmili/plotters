@@ -144,7 +144,7 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
             // draw wedge
             // TODO: Currently the backend doesn't have API to draw an arc. We need add that in the
             // future
-            backend.fill_polygon(points, (*slice_style).into())?;
+            backend.fill_polygon(&points[..], (*slice_style).into())?;
 
             // label coords from the middle
             let mut mid_coord =

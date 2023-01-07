@@ -114,7 +114,7 @@ impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for TriangleMarker<
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some((x, y)) = points.next() {
             let size = self.size.in_pixels(&ps);
-            let points = [-90, -210, -330]
+            let points: Vec<_> = [-90, -210, -330]
                 .iter()
                 .map(|deg| f64::from(*deg) * std::f64::consts::PI / 180.0)
                 .map(|rad| {
@@ -122,8 +122,9 @@ impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for TriangleMarker<
                         (rad.cos() * f64::from(size) + f64::from(x)).ceil() as i32,
                         (rad.sin() * f64::from(size) + f64::from(y)).ceil() as i32,
                     )
-                });
-            backend.fill_polygon(points, self.style.color.to_backend_color().into())?;
+                })
+                .collect();
+            backend.fill_polygon(&points[..], self.style.color.to_backend_color().into())?;
         }
         Ok(())
     }

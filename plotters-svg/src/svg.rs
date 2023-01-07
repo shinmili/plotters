@@ -297,9 +297,9 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path(
         &mut self,
-        path: I,
+        path: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         if style.color.alpha == 0.0 {
@@ -325,9 +325,9 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon(
         &mut self,
-        path: I,
+        path: &[BackendCoord],
         style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         if style.color.alpha == 0.0 {
