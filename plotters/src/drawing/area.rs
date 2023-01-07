@@ -291,7 +291,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
             backend.draw_rect(
                 (self.rect.x0, self.rect.y0),
                 (self.rect.x1, self.rect.y1),
-                color.to_backend_color(),
+                color.to_backend_color().into(),
                 true,
             )
         })

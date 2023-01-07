@@ -204,7 +204,7 @@ pub fn fill_polygon<DB: DrawingBackend>(
                             check_result!(back.draw_line(
                                 (sweep_line, from.ceil() as i32),
                                 (sweep_line, to.floor() as i32),
-                                style.color,
+                                style.color.into(),
                             ));
                             check_result!(back.draw_pixel(
                                 (sweep_line, from.floor() as i32),
@@ -218,7 +218,7 @@ pub fn fill_polygon<DB: DrawingBackend>(
                             check_result!(back.draw_line(
                                 (from.ceil() as i32, sweep_line),
                                 (to.floor() as i32, sweep_line),
-                                style.color,
+                                style.color.into(),
                             ));
                             check_result!(back.draw_pixel(
                                 (from.floor() as i32, sweep_line),

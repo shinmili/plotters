@@ -146,15 +146,14 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_line<S: Into<BackendStyle>>(
+    fn draw_line(
         &mut self,
         from: BackendCoord,
         to: BackendCoord,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
         self.num_draw_line_call += 1;
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_draw_line.pop_front() {
@@ -167,16 +166,15 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_rect<S: Into<BackendStyle>>(
+    fn draw_rect(
         &mut self,
         upper_left: BackendCoord,
         bottom_right: BackendCoord,
-        style: S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
         self.num_draw_rect_call += 1;
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_draw_rect.pop_front() {
@@ -189,14 +187,13 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_path<S: Into<BackendStyle>, I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
         self.num_draw_path_call += 1;
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_draw_path.pop_front() {
@@ -209,16 +206,15 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_circle<S: Into<BackendStyle>>(
+    fn draw_circle(
         &mut self,
         center: BackendCoord,
         radius: u32,
-        style: S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
         self.num_draw_circle_call += 1;
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_draw_circle.pop_front() {
@@ -231,14 +227,13 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn fill_polygon<S: Into<BackendStyle>, I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         self.check_before_draw();
         self.num_fill_polygon_call += 1;
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         if let Some(mut checker) = self.check_fill_polygon.pop_front() {

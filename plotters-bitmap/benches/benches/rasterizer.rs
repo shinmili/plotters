@@ -53,7 +53,7 @@ fn draw_line(c: &mut Criterion) {
                 root.draw_line(
                     (0, 0),
                     ((W / 2) as i32, (y * 100) as i32),
-                    RGBColor(255, 0, 234).to_rgba(),
+                    RGBColor(255, 0, 234).to_rgba().into(),
                 )
                 .unwrap();
             }
@@ -69,7 +69,7 @@ fn draw_line(c: &mut Criterion) {
                 root.draw_line(
                     (0, 0),
                     ((W / 2) as i32, (y * 100) as i32),
-                    RGBColor(255, 0, 234).to_rgba(),
+                    RGBColor(255, 0, 234).to_rgba().into(),
                 )
                 .unwrap();
             }
@@ -128,8 +128,13 @@ fn fill_circle(c: &mut Criterion) {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
             let mut root = BitMapBackend::with_buffer(&mut buffer, (W, H));
-            root.draw_circle((W as i32 / 2, H as i32 / 2), W / 2, WHITE.to_rgba(), true)
-                .unwrap();
+            root.draw_circle(
+                (W as i32 / 2, H as i32 / 2),
+                W / 2,
+                WHITE.to_rgba().into(),
+                true,
+            )
+            .unwrap();
         })
     });
 
@@ -138,8 +143,13 @@ fn fill_circle(c: &mut Criterion) {
         b.iter(|| {
             let mut root =
                 BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
-            root.draw_circle((W as i32 / 2, H as i32 / 2), W / 2, WHITE.to_rgba(), true)
-                .unwrap();
+            root.draw_circle(
+                (W as i32 / 2, H as i32 / 2),
+                W / 2,
+                WHITE.to_rgba().into(),
+                true,
+            )
+            .unwrap();
         })
     });
 }
@@ -182,7 +192,7 @@ fn fill_hexagon(c: &mut Criterion) {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
             let mut root = BitMapBackend::with_buffer(&mut buffer, (W, H));
-            root.fill_polygon(vert.clone(), RED).unwrap();
+            root.fill_polygon(vert.clone(), RED.into()).unwrap();
         })
     });
 
@@ -191,7 +201,7 @@ fn fill_hexagon(c: &mut Criterion) {
         b.iter(|| {
             let mut root =
                 BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
-            root.fill_polygon(vert.clone(), RED).unwrap();
+            root.fill_polygon(vert.clone(), RED.into()).unwrap();
         })
     });
 }

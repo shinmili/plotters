@@ -104,7 +104,7 @@ fn draw_sweep_line<B: DrawingBackend>(
         check_result!(b.draw_line(
             (p0 + x0, s.ceil() as i32 + y0),
             (p0 + x0, e.floor() as i32 + y0),
-            style.color
+            style.color.into()
         ));
         check_result!(b.draw_pixel((p0 + x0, s.ceil() as i32 + y0 - 1), style.color.mix(vs)));
         check_result!(b.draw_pixel((p0 + x0, e.floor() as i32 + y0 + 1), style.color.mix(ve)));
@@ -112,7 +112,7 @@ fn draw_sweep_line<B: DrawingBackend>(
         check_result!(b.draw_line(
             (s.ceil() as i32 + x0, p0 + y0),
             (e.floor() as i32 + x0, p0 + y0),
-            style.color
+            style.color.into()
         ));
         check_result!(b.draw_pixel((s.ceil() as i32 + x0 - 1, p0 + y0), style.color.mix(vs)));
         check_result!(b.draw_pixel((e.floor() as i32 + x0 + 1, p0 + y0), style.color.mix(ve)));
@@ -174,23 +174,23 @@ fn draw_annulus<B: DrawingBackend>(
                 check_result!(b.draw_line(
                     (center.0 + h, center.1 + f),
                     (center.0 + h, center.1 + t),
-                    style.color
+                    style.color.into()
                 ));
                 check_result!(b.draw_line(
                     (center.0 - h, center.1 + f),
                     (center.0 - h, center.1 + t),
-                    style.color
+                    style.color.into()
                 ));
 
                 check_result!(b.draw_line(
                     (center.0 + f + 1, center.1 + h),
                     (center.0 + t - 1, center.1 + h),
-                    style.color
+                    style.color.into()
                 ));
                 check_result!(b.draw_line(
                     (center.0 + f + 1, center.1 - h),
                     (center.0 + t - 1, center.1 - h),
-                    style.color
+                    style.color.into()
                 ));
 
                 Ok(())
@@ -230,43 +230,43 @@ fn draw_annulus<B: DrawingBackend>(
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 - d_inner),
         (center.0 - d_outter, center.1 - d_outter),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 - d_inner),
         (center.0 + d_outter, center.1 - d_outter),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 + d_inner),
         (center.0 - d_outter, center.1 + d_outter),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_outter, center.1 + d_outter),
-        style.color
+        style.color.into()
     ));
 
     check_result!(b.draw_line(
         (center.0 - d_inner, center.1 + d_inner),
         (center.0 - d_outter_actually, center.1 + d_inner),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 - d_inner),
         (center.0 + d_inner, center.1 - d_outter_actually),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_inner, center.1 + d_outter_actually),
-        style.color
+        style.color.into()
     ));
     check_result!(b.draw_line(
         (center.0 + d_inner, center.1 + d_inner),
         (center.0 + d_outter_actually, center.1 + d_inner),
-        style.color
+        style.color.into()
     ));
 
     Ok(())
@@ -321,9 +321,9 @@ pub fn draw_circle<B: DrawingBackend>(
         let bottom = center.1 + lx.floor() as i32;
 
         if fill {
-            check_result!(b.draw_line((left, y), (right, y), style.color));
-            check_result!(b.draw_line((x, top), (x, up - 1), style.color));
-            check_result!(b.draw_line((x, down + 1), (x, bottom), style.color));
+            check_result!(b.draw_line((left, y), (right, y), style.color.into()));
+            check_result!(b.draw_line((x, top), (x, up - 1), style.color.into()));
+            check_result!(b.draw_line((x, down + 1), (x, bottom), style.color.into()));
         } else {
             check_result!(b.draw_pixel((left, y), style.color.mix(1.0 - v)));
             check_result!(b.draw_pixel((right, y), style.color.mix(1.0 - v)));

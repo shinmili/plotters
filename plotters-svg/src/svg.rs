@@ -238,14 +238,12 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_line<S: Into<BackendStyle>>(
+    fn draw_line(
         &mut self,
         from: BackendCoord,
         to: BackendCoord,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
-
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -265,15 +263,13 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_rect<S: Into<BackendStyle>>(
+    fn draw_rect(
         &mut self,
         upper_left: BackendCoord,
         bottom_right: BackendCoord,
-        style: S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
-
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -301,13 +297,11 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_path<S: Into<BackendStyle>, I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
-
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -331,13 +325,11 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn fill_polygon<S: Into<BackendStyle>, I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
-
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -359,15 +351,13 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_circle<S: Into<BackendStyle>>(
+    fn draw_circle(
         &mut self,
         center: BackendCoord,
         radius: u32,
-        style: S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
-
         if style.color.alpha == 0.0 {
             return Ok(());
         }

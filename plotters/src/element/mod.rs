@@ -46,7 +46,7 @@
             _: (u32, u32),
         ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
             let pos = pos.next().unwrap();
-            backend.draw_rect(pos, (pos.0 + 10, pos.1 + 12), RED, false)?;
+            backend.draw_rect(pos, (pos.0 + 10, pos.1 + 12), RED.into(), false)?;
             let text_style = &("sans-serif", 20).into_text_style(&backend.get_size()).color(&RED);
             backend.draw_text("X", text_style, pos)
         }

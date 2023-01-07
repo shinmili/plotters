@@ -140,11 +140,11 @@ fn test_draw_rect_out_of_range() {
     {
         let mut back = BitMapBackend::with_buffer(&mut buffer, (1000, 1000));
 
-        back.draw_line((1100, 0), (1100, 999), RED.to_rgba())
+        back.draw_line((1100, 0), (1100, 999), RED.to_rgba().into())
             .unwrap();
-        back.draw_line((0, 1100), (999, 1100), RED.to_rgba())
+        back.draw_line((0, 1100), (999, 1100), RED.to_rgba().into())
             .unwrap();
-        back.draw_rect((1100, 0), (1100, 999), RED.to_rgba(), true)
+        back.draw_rect((1100, 0), (1100, 999), RED.to_rgba().into(), true)
             .unwrap();
     }
 
@@ -166,7 +166,8 @@ fn test_draw_rect_exclude_bottom_right() {
     {
         let mut back = BitMapBackend::with_buffer(&mut buffer, (100, 100));
 
-        back.draw_rect((0, 0), (0, 0), RED.to_rgba(), true).unwrap();
+        back.draw_rect((0, 0), (0, 0), RED.to_rgba().into(), true)
+            .unwrap();
     }
 
     assert_eq!(&buffer[0..3], &[0, 0, 0]);
@@ -181,10 +182,10 @@ fn test_draw_line_out_of_range() {
     {
         let mut back = BitMapBackend::with_buffer(&mut buffer, (1000, 1000));
 
-        back.draw_line((-1000, -1000), (2000, 2000), WHITE.to_rgba())
+        back.draw_line((-1000, -1000), (2000, 2000), WHITE.to_rgba().into())
             .unwrap();
 
-        back.draw_line((999, -1000), (999, 2000), WHITE.to_rgba())
+        back.draw_line((999, -1000), (999, 2000), WHITE.to_rgba().into())
             .unwrap();
     }
 
@@ -210,9 +211,9 @@ fn test_bitmap_blend_large() {
         {
             let mut back = BitMapBackend::with_buffer(&mut buffer, (1000, 1000));
 
-            back.draw_rect((0, 0), (1000, 1000), WHITE.mix(0.1), true)
+            back.draw_rect((0, 0), (1000, 1000), WHITE.mix(0.1).into(), true)
                 .unwrap(); // should be (24, 24, 24)
-            back.draw_rect((0, 0), (100, 100), fill_color.mix(0.5), true)
+            back.draw_rect((0, 0), (100, 100), fill_color.mix(0.5).into(), true)
                 .unwrap(); // should be (139, 24, 24)
         }
 
@@ -251,17 +252,17 @@ fn test_bitmap_bgrx_pixel_format() {
                 .unwrap();
 
         rgb_back
-            .draw_rect((0, 0), (1000, 1000), BLACK, true)
+            .draw_rect((0, 0), (1000, 1000), BLACK.into(), true)
             .unwrap();
         bgrx_back
-            .draw_rect((0, 0), (1000, 1000), BLACK, true)
+            .draw_rect((0, 0), (1000, 1000), BLACK.into(), true)
             .unwrap();
 
         rgb_back
             .draw_rect(
                 (0, 0),
                 (1000, 1000),
-                RGBColor(0xaa, 0xbb, 0xcc).mix(0.85),
+                RGBColor(0xaa, 0xbb, 0xcc).mix(0.85).into(),
                 true,
             )
             .unwrap();
@@ -269,34 +270,44 @@ fn test_bitmap_bgrx_pixel_format() {
             .draw_rect(
                 (0, 0),
                 (1000, 1000),
-                RGBColor(0xaa, 0xbb, 0xcc).mix(0.85),
+                RGBColor(0xaa, 0xbb, 0xcc).mix(0.85).into(),
                 true,
             )
             .unwrap();
 
         rgb_back
-            .draw_rect((0, 0), (1000, 1000), RED.mix(0.85), true)
+            .draw_rect((0, 0), (1000, 1000), RED.mix(0.85).into(), true)
             .unwrap();
         bgrx_back
-            .draw_rect((0, 0), (1000, 1000), RED.mix(0.85), true)
-            .unwrap();
-
-        rgb_back.draw_circle((300, 300), 100, GREEN, true).unwrap();
-        bgrx_back.draw_circle((300, 300), 100, GREEN, true).unwrap();
-
-        rgb_back.draw_rect((10, 10), (50, 50), BLUE, true).unwrap();
-        bgrx_back.draw_rect((10, 10), (50, 50), BLUE, true).unwrap();
-
-        rgb_back.draw_rect((10, 10), (50, 50), WHITE, true).unwrap();
-        bgrx_back
-            .draw_rect((10, 10), (50, 50), WHITE, true)
+            .draw_rect((0, 0), (1000, 1000), RED.mix(0.85).into(), true)
             .unwrap();
 
         rgb_back
-            .draw_rect((10, 10), (15, 50), YELLOW, true)
+            .draw_circle((300, 300), 100, GREEN.into(), true)
             .unwrap();
         bgrx_back
-            .draw_rect((10, 10), (15, 50), YELLOW, true)
+            .draw_circle((300, 300), 100, GREEN.into(), true)
+            .unwrap();
+
+        rgb_back
+            .draw_rect((10, 10), (50, 50), BLUE.into(), true)
+            .unwrap();
+        bgrx_back
+            .draw_rect((10, 10), (50, 50), BLUE.into(), true)
+            .unwrap();
+
+        rgb_back
+            .draw_rect((10, 10), (50, 50), WHITE.into(), true)
+            .unwrap();
+        bgrx_back
+            .draw_rect((10, 10), (50, 50), WHITE.into(), true)
+            .unwrap();
+
+        rgb_back
+            .draw_rect((10, 10), (15, 50), YELLOW.into(), true)
+            .unwrap();
+        bgrx_back
+            .draw_rect((10, 10), (15, 50), YELLOW.into(), true)
             .unwrap();
     }
 
@@ -331,7 +342,7 @@ fn test_draw_simple_lines() {
 
     {
         let mut back = BitMapBackend::with_buffer(&mut buffer, (1000, 1000));
-        back.draw_line((500, 0), (500, 1000), WHITE.filled().stroke_width(5))
+        back.draw_line((500, 0), (500, 1000), WHITE.filled().stroke_width(5).into())
             .unwrap();
     }
 
