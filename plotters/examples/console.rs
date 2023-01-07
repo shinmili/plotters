@@ -53,17 +53,15 @@ impl PixelState {
 pub struct TextDrawingBackend(Vec<PixelState>);
 
 impl DrawingBackend for TextDrawingBackend {
-    type ErrorType = std::io::Error;
-
     fn get_size(&self) -> (u32, u32) {
         (100, 30)
     }
 
-    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind> {
         Ok(())
     }
 
-    fn present(&mut self) -> Result<(), DrawingErrorKind<std::io::Error>> {
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
         for r in 0..30 {
             let mut buf = String::new();
             for c in 0..100 {
@@ -75,11 +73,7 @@ impl DrawingBackend for TextDrawingBackend {
         Ok(())
     }
 
-    fn draw_pixel(
-        &mut self,
-        pos: (i32, i32),
-        color: BackendColor,
-    ) -> Result<(), DrawingErrorKind<std::io::Error>> {
+    fn draw_pixel(&mut self, pos: (i32, i32), color: BackendColor) -> Result<(), DrawingErrorKind> {
         if color.alpha > 0.3 {
             self.0[(pos.1 * 100 + pos.0) as usize].update(PixelState::Pixel);
         }
@@ -91,7 +85,7 @@ impl DrawingBackend for TextDrawingBackend {
         from: (i32, i32),
         to: (i32, i32),
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if from.0 == to.0 {
             let x = from.0;
             let y0 = from.1.min(to.1);
@@ -119,7 +113,7 @@ impl DrawingBackend for TextDrawingBackend {
         &self,
         text: &str,
         _: BackendTextStyle<'a>,
-    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(u32, u32), DrawingErrorKind> {
         Ok((text.len() as u32, 1))
     }
 
@@ -128,7 +122,7 @@ impl DrawingBackend for TextDrawingBackend {
         text: &str,
         style: BackendTextStyle<'a>,
         pos: (i32, i32),
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let (width, height) = self.estimate_text_size(text, style)?;
         let (width, height) = (width as i32, height as i32);
         let dx = match style.anchor.h_pos {
@@ -151,10 +145,7 @@ impl DrawingBackend for TextDrawingBackend {
 
 fn draw_chart<DB: DrawingBackend>(
     b: DrawingArea<DB, plotters::coord::Shift>,
-) -> Result<(), Box<dyn Error>>
-where
-    DB::ErrorType: 'static,
-{
+) -> Result<(), Box<dyn Error>> {
     let mut chart = ChartBuilder::on(&b)
         .margin(1)
         .caption("Sine and Cosine", ("sans-serif", (10).percent_height()))

@@ -234,7 +234,7 @@ where
         }
     }
 
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind>
     where
         XT: Clone,
         YT: Clone,

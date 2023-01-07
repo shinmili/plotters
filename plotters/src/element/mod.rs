@@ -44,7 +44,7 @@
             mut pos: I,
             backend: &mut DB,
             _: (u32, u32),
-        ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+        ) -> Result<(), DrawingErrorKind> {
             let pos = pos.next().unwrap();
             backend.draw_rect(pos, (pos.0 + 10, pos.1 + 12), RED.into(), false)?;
             let text_style = ("sans-serif", 20).into_text_style(&backend.get_size()).color(&RED).into();
@@ -248,7 +248,7 @@ pub trait Drawable<DB: DrawingBackend, CM: CoordMapper = BackendCoordOnly> {
         pos: I,
         backend: &mut DB,
         parent_dim: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>>;
+    ) -> Result<(), DrawingErrorKind>;
 }
 
 /// Useful to translate from guest coordinates to backend coordinates

@@ -111,18 +111,16 @@ impl std::fmt::Display for MockedError {
 impl std::error::Error for MockedError {}
 
 impl DrawingBackend for MockedBackend {
-    type ErrorType = MockedError;
-
     fn get_size(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
-    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<MockedError>> {
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind> {
         self.init_count += 1;
         Ok(())
     }
 
-    fn present(&mut self) -> Result<(), DrawingErrorKind<MockedError>> {
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
         self.init_count = 0;
         self.draw_count = 0;
         Ok(())
@@ -132,7 +130,7 @@ impl DrawingBackend for MockedBackend {
         &mut self,
         point: BackendCoord,
         color: BackendColor,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_draw_pixel_call += 1;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
@@ -151,7 +149,7 @@ impl DrawingBackend for MockedBackend {
         from: BackendCoord,
         to: BackendCoord,
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_draw_line_call += 1;
         let color = style.color;
@@ -172,7 +170,7 @@ impl DrawingBackend for MockedBackend {
         bottom_right: BackendCoord,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_draw_rect_call += 1;
         let color = style.color;
@@ -191,7 +189,7 @@ impl DrawingBackend for MockedBackend {
         &mut self,
         path: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_draw_path_call += 1;
         let color = style.color;
@@ -216,7 +214,7 @@ impl DrawingBackend for MockedBackend {
         radius: u32,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_draw_circle_call += 1;
         let color = style.color;
@@ -235,7 +233,7 @@ impl DrawingBackend for MockedBackend {
         &mut self,
         path: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.check_before_draw();
         self.num_fill_polygon_call += 1;
         let color = style.color;
@@ -255,7 +253,7 @@ impl DrawingBackend for MockedBackend {
         text: &str,
         style: BackendTextStyle<'a>,
         pos: BackendCoord,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         self.check_before_draw();

@@ -73,7 +73,7 @@ impl<X, Y, Z, DB: DrawingBackend> Drawable<DB, BackendCoordAndZ> for Cuboid<X, Y
         points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let vert: Vec<_> = points.collect();
         let mut polygon = vec![];
         for mask in [1, 2, 4].iter().cloned() {

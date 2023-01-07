@@ -40,7 +40,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Pixel<Coord> {
         mut points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
             return backend.draw_pixel((x, y), self.style.color.to_backend_color());
         }
@@ -104,7 +104,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for PathElement<Coord> {
         points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.collect();
         backend.draw_path(&points[..], self.style.into())
     }
@@ -177,7 +177,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Rectangle<Coord> {
         mut points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         match (points.next(), points.next()) {
             (Some(a), Some(b)) => {
                 let (mut a, mut b) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
@@ -269,7 +269,7 @@ impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for Circle<Coord, S
         mut points: I,
         backend: &mut DB,
         ps: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
             let size = self.size.in_pixels(&ps).max(0) as u32;
             return backend.draw_circle((x, y), size, self.style.into(), self.style.filled);
@@ -330,7 +330,7 @@ impl<Coord, DB: DrawingBackend> Drawable<DB> for Polygon<Coord> {
         points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.collect();
         backend.fill_polygon(&points[..], self.style.color.to_backend_color().into())
     }

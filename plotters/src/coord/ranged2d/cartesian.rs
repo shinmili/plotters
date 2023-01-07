@@ -144,7 +144,7 @@ impl<'a, X: Ranged, Y: Ranged> MeshLine<'a, X, Y> {
         &self,
         backend: &mut DB,
         style: &ShapeStyle,
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let (&left, &right) = match self {
             MeshLine::XMesh(a, b, _) => (a, b),
             MeshLine::YMesh(a, b, _) => (a, b),

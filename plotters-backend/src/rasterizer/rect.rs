@@ -6,7 +6,7 @@ pub fn draw_rect<B: DrawingBackend + ?Sized>(
     bottom_right: BackendCoord,
     style: BackendStyle,
     fill: bool,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     if style.color.alpha == 0.0 {
         return Ok(());
     }

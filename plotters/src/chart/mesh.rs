@@ -103,7 +103,7 @@ where
     }
 
     /// Draw the axes for the secondary coordinate system
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>> {
+    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind> {
         self.style.draw()
     }
 
@@ -420,7 +420,7 @@ where
     }
 
     /// Draw the configured mesh on the target plot
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind>
     where
         X: ValueFormatter<<X as Ranged>::ValueType>,
         Y: ValueFormatter<<Y as Ranged>::ValueType>,

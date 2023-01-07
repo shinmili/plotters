@@ -196,7 +196,7 @@ impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K
         points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.take(5).collect();
         if points.len() == 5 {
             let width = f64::from(self.width);

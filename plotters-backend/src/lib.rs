@@ -80,14 +80,14 @@ pub type BackendCoord = (i32, i32);
 
 /// The error produced by a drawing backend.
 #[derive(Debug)]
-pub enum DrawingErrorKind<E> {
+pub enum DrawingErrorKind {
     /// A drawing backend error
-    DrawingError(E),
+    DrawingError(Box<dyn Error + Send + Sync>),
     /// A font rendering error
-    FontError(Box<dyn Error + Send + Sync + 'static>),
+    FontError(Box<dyn Error + Send + Sync>),
 }
 
-impl<E: std::fmt::Display> std::fmt::Display for DrawingErrorKind<E> {
+impl std::fmt::Display for DrawingErrorKind {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             DrawingErrorKind::DrawingError(e) => write!(fmt, "Drawing backend error: {}", e),
@@ -96,7 +96,7 @@ impl<E: std::fmt::Display> std::fmt::Display for DrawingErrorKind<E> {
     }
 }
 
-impl<E: Error> Error for DrawingErrorKind<E> {}
+impl Error for DrawingErrorKind {}
 
 ///  The drawing backend trait, which implements the low-level drawing APIs.
 ///  This trait has a set of default implementation. And the minimal requirement of
@@ -106,21 +106,18 @@ impl<E: Error> Error for DrawingErrorKind<E> {}
 ///  override by the backend specific implementation. Otherwise, the default implementation
 ///  will use the pixel-based approach to draw other types of low-level shapes.
 pub trait DrawingBackend {
-    /// The error type reported by the backend
-    type ErrorType: Error + Send + Sync;
-
     /// Get the dimension of the drawing backend in pixels
     fn get_size(&self) -> (u32, u32);
 
     /// Ensure the backend is ready to draw
-    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind>;
 
     /// Finalize the drawing step and present all the changes.
     /// This is used as the real-time rendering support.
     /// The backend may implement in the following way, when `ensure_prepared` is called
     /// it checks if it needs a fresh buffer and `present` is called rendering all the
     /// pending changes on the screen.
-    fn present(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
+    fn present(&mut self) -> Result<(), DrawingErrorKind>;
 
     /// Draw a pixel on the drawing backend
     /// - `point`: The backend pixel-based coordinate to draw
@@ -129,7 +126,7 @@ pub trait DrawingBackend {
         &mut self,
         point: BackendCoord,
         color: BackendColor,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>>;
+    ) -> Result<(), DrawingErrorKind>;
 
     /// Draw a line on the drawing backend
     /// - `from`: The start point of the line
@@ -140,7 +137,7 @@ pub trait DrawingBackend {
         from: BackendCoord,
         to: BackendCoord,
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         rasterizer::draw_line(self, from, to, style.into())
     }
 
@@ -155,7 +152,7 @@ pub trait DrawingBackend {
         bottom_right: BackendCoord,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         rasterizer::draw_rect(self, upper_left, bottom_right, style, fill)
     }
 
@@ -166,7 +163,7 @@ pub trait DrawingBackend {
         &mut self,
         path: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -201,7 +198,7 @@ pub trait DrawingBackend {
         radius: u32,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         rasterizer::draw_circle(self, center, radius, style.into(), fill)
     }
 
@@ -209,7 +206,7 @@ pub trait DrawingBackend {
         &mut self,
         vert: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         rasterizer::fill_polygon(self, vert, style.into())
     }
 
@@ -222,7 +219,7 @@ pub trait DrawingBackend {
         text: &str,
         style: BackendTextStyle<'a>,
         pos: BackendCoord,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let color = style.color;
         if color.alpha == 0.0 {
             return Ok(());
@@ -276,7 +273,7 @@ pub trait DrawingBackend {
         &self,
         text: &str,
         style: BackendTextStyle<'a>,
-    ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(u32, u32), DrawingErrorKind> {
         let backend = font::DefaultFontBackend;
         let font = backend
             .load_font(&FontDesc::new(style.family, style.size, style.style))
@@ -303,7 +300,7 @@ pub trait DrawingBackend {
         pos: BackendCoord,
         (iw, ih): (u32, u32),
         src: &[u8],
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let (w, h) = self.get_size();
 
         for dx in 0..iw {

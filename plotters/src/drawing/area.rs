@@ -134,9 +134,9 @@ impl<DB: DrawingBackend, CT: CoordTranslate + Clone> Clone for DrawingArea<DB, C
 
 /// The error description of any drawing area API
 #[derive(Debug)]
-pub enum DrawingAreaErrorKind<E: Error + Send + Sync> {
+pub enum DrawingAreaErrorKind {
     /// The error is due to drawing backend failure
-    BackendError(DrawingErrorKind<E>),
+    BackendError(DrawingErrorKind),
     /// We are not able to get the mutable reference of the backend,
     /// which indicates the drawing backend is current used by other
     /// drawing operation
@@ -145,7 +145,7 @@ pub enum DrawingAreaErrorKind<E: Error + Send + Sync> {
     LayoutError,
 }
 
-impl<E: Error + Send + Sync> std::fmt::Display for DrawingAreaErrorKind<E> {
+impl std::fmt::Display for DrawingAreaErrorKind {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
             DrawingAreaErrorKind::BackendError(e) => write!(fmt, "backend error: {}", e),
@@ -157,10 +157,9 @@ impl<E: Error + Send + Sync> std::fmt::Display for DrawingAreaErrorKind<E> {
     }
 }
 
-impl<E: Error + Send + Sync> Error for DrawingAreaErrorKind<E> {}
+impl Error for DrawingAreaErrorKind {}
 
-#[allow(type_alias_bounds)]
-type DrawingAreaError<T: DrawingBackend> = DrawingAreaErrorKind<T::ErrorType>;
+type DrawingAreaError = DrawingAreaErrorKind;
 
 impl<DB: DrawingBackend> From<DB> for DrawingArea<DB, Shift> {
     fn from(backend: DB) -> Self {
@@ -193,9 +192,9 @@ impl<DB: DrawingBackend, X: Ranged, Y: Ranged> DrawingArea<DB, Cartesian2d<X, Y>
         mut draw_func: DrawFunc,
         y_count_max: YH,
         x_count_max: XH,
-    ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<(), DrawingAreaErrorKind>
     where
-        DrawFunc: FnMut(&mut DB, MeshLine<X, Y>) -> Result<(), DrawingErrorKind<DB::ErrorType>>,
+        DrawFunc: FnMut(&mut DB, MeshLine<X, Y>) -> Result<(), DrawingErrorKind>,
     {
         self.backend_ops(move |b| {
             self.coord
@@ -272,10 +271,10 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 
     /// Perform operation on the drawing backend
-    fn backend_ops<R, O: FnOnce(&mut DB) -> Result<R, DrawingErrorKind<DB::ErrorType>>>(
+    fn backend_ops<R, O: FnOnce(&mut DB) -> Result<R, DrawingErrorKind>>(
         &self,
         ops: O,
-    ) -> Result<R, DrawingAreaError<DB>> {
+    ) -> Result<R, DrawingAreaError> {
         if let Ok(mut db) = self.backend.try_borrow_mut() {
             db.ensure_prepared()
                 .map_err(DrawingAreaErrorKind::BackendError)?;
@@ -286,7 +285,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 
     /// Fill the entire drawing area with a color
-    pub fn fill<ColorType: Color>(&self, color: &ColorType) -> Result<(), DrawingAreaError<DB>> {
+    pub fn fill<ColorType: Color>(&self, color: &ColorType) -> Result<(), DrawingAreaError> {
         self.backend_ops(|backend| {
             backend.draw_rect(
                 (self.rect.x0, self.rect.y0),
@@ -302,18 +301,18 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
         &self,
         pos: CT::From,
         color: &ColorType,
-    ) -> Result<(), DrawingAreaError<DB>> {
+    ) -> Result<(), DrawingAreaError> {
         let pos = self.coord.translate(&pos);
         self.backend_ops(|b| b.draw_pixel(pos, color.to_backend_color()))
     }
 
     /// Present all the pending changes to the backend
-    pub fn present(&self) -> Result<(), DrawingAreaError<DB>> {
+    pub fn present(&self) -> Result<(), DrawingAreaError> {
         self.backend_ops(|b| b.present())
     }
 
     /// Draw an high-level element
-    pub fn draw<'a, E, B>(&self, element: &'a E) -> Result<(), DrawingAreaError<DB>>
+    pub fn draw<'a, E, B>(&self, element: &'a E) -> Result<(), DrawingAreaError>
     where
         B: CoordMapper,
         &'a E: PointCollection<'a, CT::From, B>,
@@ -343,7 +342,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
         &self,
         text: &str,
         style: &TextStyle,
-    ) -> Result<(u32, u32), DrawingAreaError<DB>> {
+    ) -> Result<(u32, u32), DrawingAreaError> {
         self.backend_ops(move |b| b.estimate_text_size(text, style.clone().into()))
     }
 }
@@ -482,7 +481,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         &self,
         text: &str,
         style: S,
-    ) -> Result<Self, DrawingAreaError<DB>> {
+    ) -> Result<Self, DrawingAreaError> {
         let style = style.into();
 
         let x_padding = (self.rect.x1 - self.rect.x0) / 2;
@@ -518,7 +517,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         text: &str,
         style: &TextStyle,
         pos: BackendCoord,
-    ) -> Result<(), DrawingAreaError<DB>> {
+    ) -> Result<(), DrawingAreaError> {
         self.backend_ops(|b| {
             b.draw_text(
                 text,

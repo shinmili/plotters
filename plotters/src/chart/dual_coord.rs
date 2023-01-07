@@ -196,7 +196,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
     pub fn draw_secondary_series<E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaErrorKind>
     where
         for<'b> &'b E: PointCollection<'b, (SX::ValueType, SY::ValueType)>,
         E: Drawable<DB>,

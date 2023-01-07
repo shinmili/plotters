@@ -291,7 +291,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         y_spec: Y,
     ) -> Result<
         ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaErrorKind<DB::ErrorType>,
+        DrawingAreaErrorKind,
     > {
         self.build_cartesian_2d(x_spec, y_spec)
     }
@@ -312,7 +312,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         y_spec: Y,
     ) -> Result<
         ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaErrorKind<DB::ErrorType>,
+        DrawingAreaErrorKind,
     > {
         let mut label_areas = [None, None, None, None];
 
@@ -457,7 +457,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         z_spec: Z,
     ) -> Result<
         ChartContext<'a, DB, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
-        DrawingAreaErrorKind<DB::ErrorType>,
+        DrawingAreaErrorKind,
     > {
         let mut drawing_area = DrawingArea::clone(self.root_area);
 

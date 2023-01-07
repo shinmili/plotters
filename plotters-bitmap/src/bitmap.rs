@@ -174,24 +174,22 @@ impl<'a, P: PixelFormat> BitMapBackend<'a, P> {
 }
 
 impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
-    type ErrorType = BitMapBackendError;
-
     fn get_size(&self) -> (u32, u32) {
         self.size
     }
 
-    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<BitMapBackendError>> {
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind> {
         self.saved = false;
         Ok(())
     }
 
     #[cfg(any(target_arch = "wasm32", not(feature = "image")))]
-    fn present(&mut self) -> Result<(), DrawingErrorKind<BitMapBackendError>> {
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
         Ok(())
     }
 
     #[cfg(all(not(target_arch = "wasm32"), feature = "image"))]
-    fn present(&mut self) -> Result<(), DrawingErrorKind<BitMapBackendError>> {
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
         if !P::can_be_saved() {
             return Ok(());
         }
@@ -200,14 +198,14 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             Target::File(path) => {
                 if let Some(img) = BorrowedImage::from_raw(w, h, self.buffer.borrow_buffer()) {
                     img.save(&path).map_err(|x| {
-                        DrawingErrorKind::DrawingError(BitMapBackendError::ImageError(x))
+                        DrawingErrorKind::DrawingError(Box::new(BitMapBackendError::ImageError(x)))
                     })?;
                     self.saved = true;
                     Ok(())
                 } else {
-                    Err(DrawingErrorKind::DrawingError(
+                    Err(DrawingErrorKind::DrawingError(Box::new(
                         BitMapBackendError::InvalidBuffer,
-                    ))
+                    )))
                 }
             }
             Target::Buffer(_) => Ok(()),
@@ -216,7 +214,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
             Target::Gif(target) => {
                 target
                     .flush_frame(self.buffer.borrow_buffer())
-                    .map_err(DrawingErrorKind::DrawingError)?;
+                    .map_err(|e| DrawingErrorKind::DrawingError(Box::new(e)))?;
                 self.saved = true;
                 Ok(())
             }
@@ -227,7 +225,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         &mut self,
         point: BackendCoord,
         color: BackendColor,
-    ) -> Result<(), DrawingErrorKind<BitMapBackendError>> {
+    ) -> Result<(), DrawingErrorKind> {
         if point.0 < 0
             || point.1 < 0
             || point.0 as u32 >= self.size.0
@@ -249,7 +247,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         from: (i32, i32),
         to: (i32, i32),
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let alpha = style.color.alpha;
         let (r, g, b) = style.color.rgb;
 
@@ -275,7 +273,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         bottom_right: (i32, i32),
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let alpha = style.color.alpha;
         let (r, g, b) = style.color.rgb;
         if fill {
@@ -294,7 +292,7 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         pos: BackendCoord,
         (sw, sh): (u32, u32),
         src: &[u8],
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let (dw, dh) = self.get_size();
 
         let (x0, y0) = pos;

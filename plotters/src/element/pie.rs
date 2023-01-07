@@ -99,7 +99,7 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
         _pos: I,
         backend: &mut DB,
         _parent_dim: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let mut offset_theta = self.start_radian;
 
         // const reused for every radian calculation

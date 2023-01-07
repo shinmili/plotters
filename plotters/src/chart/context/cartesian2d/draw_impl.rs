@@ -25,7 +25,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         (x_mesh, y_mesh): (bool, bool),
         mesh_line_style: &ShapeStyle,
         mut fmt_label: FmtLabel,
-    ) -> Result<(Vec<(i32, String)>, Vec<(i32, String)>), DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<(Vec<(i32, String)>, Vec<(i32, String)>), DrawingAreaErrorKind>
     where
         FmtLabel: FnMut(&X, &Y, &MeshLine<X, Y>) -> Option<String>,
     {
@@ -67,7 +67,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         axis_style: Option<&ShapeStyle>,
         orientation: (i16, i16),
         inward_labels: bool,
-    ) -> Result<Range<i32>, DrawingAreaErrorKind<DB::ErrorType>> {
+    ) -> Result<Range<i32>, DrawingAreaErrorKind> {
         let (x0, y0) = self.drawing_area.get_base_pixel();
         let (tw, th) = area.dim_in_pixel();
 
@@ -138,7 +138,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         orientation: (i16, i16),
         axis_desc: Option<(&str, &TextStyle)>,
         tick_size: i32,
-    ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingAreaErrorKind> {
         let area = if let Some(target) = area {
             target
         } else {
@@ -333,7 +333,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         y_desc: Option<String>,
         x_tick_size: [i32; 2],
         y_tick_size: [i32; 2],
-    ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<(), DrawingAreaErrorKind>
     where
         FmtLabel: FnMut(&X, &Y, &MeshLine<X, Y>) -> Option<String>,
     {

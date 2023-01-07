@@ -227,7 +227,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
 
     See [`ChartContext::configure_series_labels()`] for more information and examples.
     */
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>> {
+    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind> {
         let drawing_area = self.target.plotting_area().strip_coord_spec();
         let font_backend = DefaultFontBackend;
 

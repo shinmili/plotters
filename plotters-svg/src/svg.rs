@@ -12,7 +12,7 @@ use std::fmt::Write as _;
 use std::fs::File;
 #[allow(unused_imports)]
 use std::io::Cursor;
-use std::io::{BufWriter, Error, Write};
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 fn make_svg_color(color: BackendColor) -> String {
@@ -181,26 +181,25 @@ impl<'a> SVGBackend<'a> {
 }
 
 impl<'a> DrawingBackend for SVGBackend<'a> {
-    type ErrorType = Error;
-
     fn get_size(&self) -> (u32, u32) {
         self.size
     }
 
-    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Error>> {
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind> {
         Ok(())
     }
 
-    fn present(&mut self) -> Result<(), DrawingErrorKind<Error>> {
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
         if !self.saved {
             while self.close_tag() {}
             match self.target {
                 Target::File(ref buf, path) => {
-                    let outfile = File::create(path).map_err(DrawingErrorKind::DrawingError)?;
+                    let outfile = File::create(path)
+                        .map_err(|e| DrawingErrorKind::DrawingError(Box::new(e)))?;
                     let mut outfile = BufWriter::new(outfile);
                     outfile
                         .write_all(buf.as_ref())
-                        .map_err(DrawingErrorKind::DrawingError)?;
+                        .map_err(|e| DrawingErrorKind::DrawingError(Box::new(e)))?;
                 }
                 Target::Buffer(_) => {}
                 #[cfg(feature = "deprecated_items")]
@@ -218,7 +217,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         &mut self,
         point: BackendCoord,
         color: BackendColor,
-    ) -> Result<(), DrawingErrorKind<Error>> {
+    ) -> Result<(), DrawingErrorKind> {
         if color.alpha == 0.0 {
             return Ok(());
         }
@@ -243,7 +242,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         from: BackendCoord,
         to: BackendCoord,
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -269,7 +268,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         bottom_right: BackendCoord,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -301,7 +300,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         &mut self,
         path: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -329,7 +328,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         &mut self,
         path: &[BackendCoord],
         style: BackendStyle,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -357,7 +356,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         radius: u32,
         style: BackendStyle,
         fill: bool,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if style.color.alpha == 0.0 {
             return Ok(());
         }
@@ -387,7 +386,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         text: &str,
         style: BackendTextStyle<'b>,
         pos: BackendCoord,
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         let color = style.color;
         if color.alpha == 0.0 {
             return Ok(());
@@ -486,7 +485,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         pos: BackendCoord,
         (w, h): (u32, u32),
         src: &'b [u8],
-    ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         use image::png::PNGEncoder;
 
         let mut data = vec![0; 0];

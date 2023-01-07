@@ -1,7 +1,7 @@
 use plotters::coord::Shift;
 use plotters::prelude::*;
 
-fn draw_chart<B: DrawingBackend>(root: &DrawingArea<B, Shift>) -> DrawResult<(), B> {
+fn draw_chart<B: DrawingBackend>(root: &DrawingArea<B, Shift>) -> DrawResult<()> {
     let mut chart = ChartBuilder::on(root)
         .caption(
             "Relative Size Example",

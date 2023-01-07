@@ -73,7 +73,7 @@ pub fn fill_polygon<DB: DrawingBackend + ?Sized>(
     back: &mut DB,
     vertices: &[BackendCoord],
     style: BackendStyle,
-) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     if let Some((x_span, y_span)) =
         vertices
             .iter()

@@ -92,7 +92,7 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
     pub(crate) fn draw_series_impl<B, E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<(), DrawingAreaErrorKind>
     where
         B: CoordMapper,
         for<'b> &'b E: PointCollection<'b, CT::From, B>,
@@ -120,7 +120,7 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
     pub fn draw_series<B, E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaErrorKind<DB::ErrorType>>
+    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaErrorKind>
     where
         B: CoordMapper,
         for<'b> &'b E: PointCollection<'b, CT::From, B>,

@@ -9,7 +9,7 @@ trait DynDrawable<DB: DrawingBackend> {
         points: &mut dyn Iterator<Item = BackendCoord>,
         backend: &mut DB,
         parent_dim: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>>;
+    ) -> Result<(), DrawingErrorKind>;
 }
 
 impl<DB: DrawingBackend, T: Drawable<DB>> DynDrawable<DB> for T {
@@ -18,7 +18,7 @@ impl<DB: DrawingBackend, T: Drawable<DB>> DynDrawable<DB> for T {
         points: &mut dyn Iterator<Item = BackendCoord>,
         backend: &mut DB,
         parent_dim: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         T::draw(self, points, backend, parent_dim)
     }
 }
@@ -49,7 +49,7 @@ impl<'a, DB: DrawingBackend, Coord: Clone> Drawable<DB> for DynElement<'a, DB, C
         mut pos: I,
         backend: &mut DB,
         parent_dim: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         self.drawable.draw_dyn(&mut pos, backend, parent_dim)
     }
 }

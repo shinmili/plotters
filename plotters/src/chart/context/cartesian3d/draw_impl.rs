@@ -57,7 +57,7 @@ where
         tick_size: i32,
         style: ShapeStyle,
         font: TextStyle,
-    ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingAreaErrorKind> {
         let coord = self.plotting_area().as_coord_spec();
         let begin = coord.translate(&Coord3D::build_coord([
             &axis[0][0],
@@ -120,10 +120,8 @@ where
         idx: usize,
         panels: &[[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3],
         style: ShapeStyle,
-    ) -> Result<
-        [[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2],
-        DrawingAreaErrorKind<DB::ErrorType>,
-    > {
+    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaErrorKind>
+    {
         let coord = self.plotting_area().as_coord_spec();
         let x_range = coord.logic_x.range();
         let y_range = coord.logic_y.range();
@@ -190,7 +188,7 @@ where
         light_grid_style: ShapeStyle,
     ) -> Result<
         [[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3],
-        DrawingAreaErrorKind<DB::ErrorType>,
+        DrawingAreaErrorKind,
     > {
         let mut r_iter = (0..3).map(|idx| {
             self.draw_axis_panel(
@@ -217,10 +215,8 @@ where
         panel_style: ShapeStyle,
         bold_grid_style: ShapeStyle,
         light_grid_style: ShapeStyle,
-    ) -> Result<
-        [[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2],
-        DrawingAreaErrorKind<DB::ErrorType>,
-    > {
+    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaErrorKind>
+    {
         let coord = self.plotting_area().as_coord_spec();
         let x_range = coord.logic_x.range();
         let y_range = coord.logic_y.range();

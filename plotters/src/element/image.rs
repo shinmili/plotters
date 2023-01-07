@@ -218,7 +218,7 @@ impl<'a, Coord, DB: DrawingBackend> Drawable<DB> for BitMapElement<'a, Coord> {
         mut points: I,
         backend: &mut DB,
         _: (u32, u32),
-    ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
+    ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
             // TODO: convert the pixel format when needed
             return backend.blit_bitmap((x, y), self.size, self.image.as_ref());

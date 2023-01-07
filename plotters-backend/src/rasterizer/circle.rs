@@ -2,12 +2,12 @@ use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
 fn draw_part_a<
     B: DrawingBackend + ?Sized,
-    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
+    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind>,
 >(
     height: f64,
     radius: u32,
     mut draw: Draw,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     let half_width = (radius as f64 * radius as f64
         - (radius as f64 - height) * (radius as f64 - height))
         .sqrt();
@@ -27,12 +27,12 @@ fn draw_part_a<
 
 fn draw_part_b<
     B: DrawingBackend + ?Sized,
-    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
+    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind>,
 >(
     from: f64,
     size: f64,
     mut draw: Draw,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     let from = from.floor();
     for x in (from - size).floor() as i32..=from as i32 {
         check_result!(draw(x, (-x as f64, x as f64)));
@@ -42,12 +42,12 @@ fn draw_part_b<
 
 fn draw_part_c<
     B: DrawingBackend + ?Sized,
-    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
+    Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind>,
 >(
     r: i32,
     r_limit: i32,
     mut draw: Draw,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     let half_size = r as f64 / (2f64).sqrt();
 
     let (x0, x1) = ((-half_size).ceil() as i32, half_size.floor() as i32);
@@ -90,7 +90,7 @@ fn draw_sweep_line<B: DrawingBackend + ?Sized>(
     (dx, dy): (i32, i32),
     p0: i32,
     (s, e): (f64, f64),
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     let mut s = if dx < 0 || dy < 0 { -s } else { s };
     let mut e = if dx < 0 || dy < 0 { -e } else { e };
     if s > e {
@@ -126,7 +126,7 @@ fn draw_annulus<B: DrawingBackend + ?Sized>(
     center: BackendCoord,
     radius: (u32, u32),
     style: BackendStyle,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     let a0 = ((radius.0 - radius.1) as f64).min(radius.0 as f64 * (1.0 - 1.0 / (2f64).sqrt()));
     let a1 = (radius.0 as f64 - a0 - radius.1 as f64).max(0.0);
 
@@ -278,7 +278,7 @@ pub fn draw_circle<B: DrawingBackend + ?Sized>(
     mut radius: u32,
     style: BackendStyle,
     mut fill: bool,
-) -> Result<(), DrawingErrorKind<B::ErrorType>> {
+) -> Result<(), DrawingErrorKind> {
     if style.color.alpha == 0.0 {
         return Ok(());
     }
