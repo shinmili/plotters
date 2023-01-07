@@ -1,10 +1,8 @@
 use super::{FontData, FontDataInternal};
-use crate::style::text_anchor::Pos;
-use crate::style::{Color, TextStyle};
 
 use std::convert::From;
 
-pub use plotters_backend::{FontFamily, FontStyle, FontTransform};
+pub use crate::{FontFamily, FontStyle, FontTransform};
 
 /// The error type for the font implementation
 pub type FontError = <FontDataInternal as FontData>::ErrorType;
@@ -84,37 +82,6 @@ impl<'a> FontDesc<'a> {
     /// Get the font transformation description
     pub fn get_transform(&self) -> FontTransform {
         self.transform.clone()
-    }
-
-    /** Returns a new text style object with the specified `color`.
-
-    # Example
-
-    ```
-    use plotters::prelude::*;
-    let text_style = ("sans-serif", 20).into_font().color(&RED);
-    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
-    ```
-
-    The result is a text label colorized accordingly:
-
-    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
-
-    # See also
-
-    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
-
-    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
-
-    */
-    pub fn color<C: Color>(&self, color: &C) -> TextStyle<'a> {
-        TextStyle {
-            font: self.clone(),
-            color: color.to_backend_color(),
-            pos: Pos::default(),
-        }
     }
 
     /// Returns the font family

@@ -1,9 +1,12 @@
 use super::color::Color;
-use super::font::{FontDesc, FontError, FontFamily, FontStyle, FontTransform};
 use super::size::{HasDimension, SizeDesc};
 use super::BLACK;
 pub use plotters_backend::text_anchor;
-use plotters_backend::{BackendColor, BackendCoord, BackendStyle, BackendTextStyle};
+use plotters_backend::text_anchor::Pos;
+use plotters_backend::{
+    BackendColor, BackendCoord, BackendStyle, BackendTextStyle, FontDesc, FontError, FontFamily,
+    FontStyle, FontTransform,
+};
 
 /// Style of a text
 #[derive(Clone)]
@@ -323,5 +326,68 @@ impl<'a> BackendTextStyle for TextStyle<'a> {
             let mix_color = color.mix(a as f64);
             draw(x, y, mix_color)
         })
+    }
+}
+
+/// TODO: This definition is temporary.
+pub trait FontDescExt {
+    /** Returns a new text style object with the specified `color`.
+
+    # Example
+
+    ```
+    use plotters::prelude::*;
+    let font = ("sans-serif", 20).into_font();
+    let text_style = font.color(&RED);
+    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
+    drawing_area.fill(&WHITE).unwrap();
+    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    ```
+
+    The result is a text label colorized accordingly:
+
+    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
+
+    # See also
+
+    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
+
+    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
+
+    */
+    fn color<C: Color>(&self, color: &C) -> TextStyle;
+}
+
+impl FontDescExt for FontDesc<'_> {
+    /** Returns a new text style object with the specified `color`.
+
+    # Example
+
+    ```
+    use plotters::prelude::*;
+    let font = ("sans-serif", 20).into_font();
+    let text_style = font.color(&RED);
+    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
+    drawing_area.fill(&WHITE).unwrap();
+    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    ```
+
+    The result is a text label colorized accordingly:
+
+    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
+
+    # See also
+
+    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
+
+    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
+
+    */
+    fn color<C: Color>(&self, color: &C) -> TextStyle<'_> {
+        TextStyle {
+            font: self.clone(),
+            color: color.to_backend_color(),
+            pos: Pos::default(),
+        }
     }
 }

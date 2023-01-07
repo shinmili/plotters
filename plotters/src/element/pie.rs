@@ -1,8 +1,8 @@
 use crate::{
     element::{Drawable, PointCollection},
-    style::{IntoFont, RGBColor, TextStyle, BLACK},
+    style::{RGBColor, TextStyle, BLACK},
 };
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, IntoFont};
 use std::{error::Error, f64::consts::PI, fmt::Display};
 
 #[derive(Debug)]

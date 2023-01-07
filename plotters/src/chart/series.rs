@@ -2,9 +2,9 @@ use super::ChartContext;
 use crate::coord::CoordTranslate;
 use crate::drawing::DrawingAreaErrorKind;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
-use crate::style::{IntoFont, IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
+use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, IntoFont};
 
 type SeriesAnnoDrawFn<'a, DB> = dyn Fn(BackendCoord) -> DynElement<'a, DB, BackendCoord> + 'a;
 
@@ -250,9 +250,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
                 continue;
             }
 
-            funcs.push(
-                draw_func.unwrap_or(&|p: BackendCoord| EmptyElement::at(p).into_dyn()),
-            );
+            funcs.push(draw_func.unwrap_or(&|p: BackendCoord| EmptyElement::at(p).into_dyn()));
             label_element.push_line(label_text);
         }
 

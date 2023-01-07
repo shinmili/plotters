@@ -803,7 +803,9 @@ pub mod prelude {
     };
 
     // Re-export the backend for backward compatibility
-    pub use plotters_backend::DrawingBackend;
+    pub use plotters_backend::{
+        DrawingBackend, FontDesc, FontFamily, FontStyle, FontTransform, IntoFont,
+    };
 
     pub use crate::drawing::*;
 
@@ -826,9 +828,8 @@ pub mod prelude {
     pub use crate::style::full_palette;
 
     pub use crate::style::{
-        AsRelative, Color, FontDesc, FontFamily, FontStyle, FontTransform, HSLColor, IntoFont,
-        IntoTextStyle, Palette, Palette100, Palette99, Palette9999, PaletteColor, RGBAColor,
-        RGBColor, ShapeStyle, TextStyle,
+        AsRelative, Color, FontDescExt, HSLColor, IntoTextStyle, Palette, Palette100, Palette99,
+        Palette9999, PaletteColor, RGBAColor, RGBColor, ShapeStyle, TextStyle,
     };
 
     // Elements

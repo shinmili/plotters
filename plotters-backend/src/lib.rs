@@ -63,10 +63,12 @@
 */
 use std::error::Error;
 
+mod font;
 pub mod rasterizer;
 mod style;
 mod text;
 
+pub use font::{FontData, FontDesc, FontError, FontResult, IntoFont, LayoutBox};
 pub use style::{BackendColor, BackendStyle};
 pub use text::{text_anchor, BackendTextStyle, FontFamily, FontStyle, FontTransform};
 
