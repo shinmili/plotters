@@ -4,7 +4,7 @@ use crate::coord::cartesian::{Cartesian2d, Cartesian3d};
 use crate::coord::ranged1d::AsRangedCoord;
 use crate::coord::Shift;
 
-use crate::drawing::{DrawingArea, DrawingAreaErrorKind};
+use crate::drawing::{DrawingArea, DrawingAreaError};
 use crate::style::{IntoTextStyle, SizeDesc, TextStyle};
 
 use plotters_backend::DrawingBackend;
@@ -291,7 +291,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         y_spec: Y,
     ) -> Result<
         ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaErrorKind,
+        DrawingAreaError,
     > {
         self.build_cartesian_2d(x_spec, y_spec)
     }
@@ -312,7 +312,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         y_spec: Y,
     ) -> Result<
         ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaErrorKind,
+        DrawingAreaError,
     > {
         let mut label_areas = [None, None, None, None];
 
@@ -457,7 +457,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
         z_spec: Z,
     ) -> Result<
         ChartContext<'a, DB, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
-        DrawingAreaErrorKind,
+        DrawingAreaError,
     > {
         let mut drawing_area = DrawingArea::clone(self.root_area);
 

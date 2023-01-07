@@ -9,7 +9,7 @@ use crate::style::{AsRelative, ShapeStyle, SizeDesc, TextStyle};
 
 use super::Coord3D;
 
-use crate::drawing::DrawingAreaErrorKind;
+use crate::drawing::DrawingAreaError;
 
 use plotters_backend::DrawingBackend;
 
@@ -234,7 +234,7 @@ where
         }
     }
 
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind>
+    pub fn draw(&mut self) -> Result<(), DrawingAreaError>
     where
         XT: Clone,
         YT: Clone,

@@ -8,7 +8,7 @@ use crate::coord::{
     ranged1d::{KeyPointHint, Ranged},
     Shift,
 };
-use crate::drawing::{DrawingArea, DrawingAreaErrorKind};
+use crate::drawing::{DrawingArea, DrawingAreaError};
 use crate::element::PathElement;
 use crate::style::{
     text_anchor::{HPos, Pos, VPos},
@@ -25,7 +25,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         (x_mesh, y_mesh): (bool, bool),
         mesh_line_style: &ShapeStyle,
         mut fmt_label: FmtLabel,
-    ) -> Result<(Vec<(i32, String)>, Vec<(i32, String)>), DrawingAreaErrorKind>
+    ) -> Result<(Vec<(i32, String)>, Vec<(i32, String)>), DrawingAreaError>
     where
         FmtLabel: FnMut(&X, &Y, &MeshLine<X, Y>) -> Option<String>,
     {
@@ -67,7 +67,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         axis_style: Option<&ShapeStyle>,
         orientation: (i16, i16),
         inward_labels: bool,
-    ) -> Result<Range<i32>, DrawingAreaErrorKind> {
+    ) -> Result<Range<i32>, DrawingAreaError> {
         let (x0, y0) = self.drawing_area.get_base_pixel();
         let (tw, th) = area.dim_in_pixel();
 
@@ -138,7 +138,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         orientation: (i16, i16),
         axis_desc: Option<(&str, &TextStyle)>,
         tick_size: i32,
-    ) -> Result<(), DrawingAreaErrorKind> {
+    ) -> Result<(), DrawingAreaError> {
         let area = if let Some(target) = area {
             target
         } else {
@@ -333,7 +333,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
         y_desc: Option<String>,
         x_tick_size: [i32; 2],
         y_tick_size: [i32; 2],
-    ) -> Result<(), DrawingAreaErrorKind>
+    ) -> Result<(), DrawingAreaError>
     where
         FmtLabel: FnMut(&X, &Y, &MeshLine<X, Y>) -> Option<String>,
     {

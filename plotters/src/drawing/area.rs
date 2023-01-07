@@ -134,7 +134,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate + Clone> Clone for DrawingArea<DB, C
 
 /// The error description of any drawing area API
 #[derive(Debug)]
-pub enum DrawingAreaErrorKind {
+pub enum DrawingAreaError {
     /// The error is due to drawing backend failure
     BackendError(DrawingErrorKind),
     /// We are not able to get the mutable reference of the backend,
@@ -145,21 +145,19 @@ pub enum DrawingAreaErrorKind {
     LayoutError,
 }
 
-impl std::fmt::Display for DrawingAreaErrorKind {
+impl std::fmt::Display for DrawingAreaError {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         match self {
-            DrawingAreaErrorKind::BackendError(e) => write!(fmt, "backend error: {}", e),
-            DrawingAreaErrorKind::SharingError => {
+            DrawingAreaError::BackendError(e) => write!(fmt, "backend error: {}", e),
+            DrawingAreaError::SharingError => {
                 write!(fmt, "Multiple backend operation in progress")
             }
-            DrawingAreaErrorKind::LayoutError => write!(fmt, "Bad layout"),
+            DrawingAreaError::LayoutError => write!(fmt, "Bad layout"),
         }
     }
 }
 
-impl Error for DrawingAreaErrorKind {}
-
-type DrawingAreaError = DrawingAreaErrorKind;
+impl Error for DrawingAreaError {}
 
 impl<DB: DrawingBackend> From<DB> for DrawingArea<DB, Shift> {
     fn from(backend: DB) -> Self {
@@ -192,7 +190,7 @@ impl<DB: DrawingBackend, X: Ranged, Y: Ranged> DrawingArea<DB, Cartesian2d<X, Y>
         mut draw_func: DrawFunc,
         y_count_max: YH,
         x_count_max: XH,
-    ) -> Result<(), DrawingAreaErrorKind>
+    ) -> Result<(), DrawingAreaError>
     where
         DrawFunc: FnMut(&mut DB, MeshLine<X, Y>) -> Result<(), DrawingErrorKind>,
     {
@@ -277,10 +275,10 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     ) -> Result<R, DrawingAreaError> {
         if let Ok(mut db) = self.backend.try_borrow_mut() {
             db.ensure_prepared()
-                .map_err(DrawingAreaErrorKind::BackendError)?;
-            ops(&mut db).map_err(DrawingAreaErrorKind::BackendError)
+                .map_err(DrawingAreaError::BackendError)?;
+            ops(&mut db).map_err(DrawingAreaError::BackendError)
         } else {
-            Err(DrawingAreaErrorKind::SharingError)
+            Err(DrawingAreaError::SharingError)
         }
     }
 

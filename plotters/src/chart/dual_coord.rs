@@ -11,7 +11,7 @@ use crate::coord::ranged1d::{Ranged, ValueFormatter};
 use crate::coord::{CoordTranslate, ReverseCoordTranslate, Shift};
 
 use crate::drawing::DrawingArea;
-use crate::drawing::DrawingAreaErrorKind;
+use crate::drawing::DrawingAreaError;
 use crate::element::{Drawable, PointCollection};
 
 use plotters_backend::{BackendCoord, DrawingBackend};
@@ -196,7 +196,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
     pub fn draw_secondary_series<E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaErrorKind>
+    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaError>
     where
         for<'b> &'b E: PointCollection<'b, (SX::ValueType, SY::ValueType)>,
         E: Drawable<DB>,

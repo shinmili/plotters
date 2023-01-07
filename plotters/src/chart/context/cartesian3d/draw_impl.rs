@@ -8,7 +8,7 @@ use crate::coord::{
     ranged1d::{KeyPointHint, Ranged},
     CoordTranslate,
 };
-use crate::drawing::DrawingAreaErrorKind;
+use crate::drawing::DrawingAreaError;
 use crate::element::{EmptyElement, PathElement, Polygon, Text};
 use crate::style::{
     text_anchor::{HPos, Pos, VPos},
@@ -57,7 +57,7 @@ where
         tick_size: i32,
         style: ShapeStyle,
         font: TextStyle,
-    ) -> Result<(), DrawingAreaErrorKind> {
+    ) -> Result<(), DrawingAreaError> {
         let coord = self.plotting_area().as_coord_spec();
         let begin = coord.translate(&Coord3D::build_coord([
             &axis[0][0],
@@ -120,8 +120,7 @@ where
         idx: usize,
         panels: &[[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3],
         style: ShapeStyle,
-    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaErrorKind>
-    {
+    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaError> {
         let coord = self.plotting_area().as_coord_spec();
         let x_range = coord.logic_x.range();
         let y_range = coord.logic_y.range();
@@ -186,10 +185,8 @@ where
         panel_style: ShapeStyle,
         bold_grid_style: ShapeStyle,
         light_grid_style: ShapeStyle,
-    ) -> Result<
-        [[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3],
-        DrawingAreaErrorKind,
-    > {
+    ) -> Result<[[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3], DrawingAreaError>
+    {
         let mut r_iter = (0..3).map(|idx| {
             self.draw_axis_panel(
                 idx,
@@ -215,8 +212,7 @@ where
         panel_style: ShapeStyle,
         bold_grid_style: ShapeStyle,
         light_grid_style: ShapeStyle,
-    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaErrorKind>
-    {
+    ) -> Result<[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2], DrawingAreaError> {
         let coord = self.plotting_area().as_coord_spec();
         let x_range = coord.logic_x.range();
         let y_range = coord.logic_y.range();

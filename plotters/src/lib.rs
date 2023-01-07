@@ -861,7 +861,7 @@ pub mod prelude {
     /// The type used to returns a drawing operation that can be failed
     /// - `T`: The return type
     /// - `D`: The drawing backend type
-    pub type DrawResult<T> = Result<T, crate::drawing::DrawingAreaErrorKind>;
+    pub type DrawResult<T> = Result<T, crate::drawing::DrawingAreaError>;
 
     #[cfg(feature = "evcxr")]
     pub use crate::evcxr::evcxr_figure;

@@ -1,6 +1,6 @@
 use super::ChartContext;
 use crate::coord::CoordTranslate;
-use crate::drawing::DrawingAreaErrorKind;
+use crate::drawing::DrawingAreaError;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
 use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
@@ -227,7 +227,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
 
     See [`ChartContext::configure_series_labels()`] for more information and examples.
     */
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind> {
+    pub fn draw(&mut self) -> Result<(), DrawingAreaError> {
         let drawing_area = self.target.plotting_area().strip_coord_spec();
         let font_backend = DefaultFontBackend;
 
@@ -259,7 +259,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
 
         let (mut w, mut h) = label_element
             .estimate_dimension(&font_backend)
-            .map_err(|e| DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(e)))?;
+            .map_err(|e| DrawingAreaError::BackendError(DrawingErrorKind::FontError(e)))?;
 
         let margin = self.margin as i32;
 
@@ -287,7 +287,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
 
         for (((_, y0), (_, y1)), make_elem) in label_element
             .compute_line_layout(&font_backend)
-            .map_err(|e| DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(e)))?
+            .map_err(|e| DrawingAreaError::BackendError(DrawingErrorKind::FontError(e)))?
             .into_iter()
             .zip(funcs.into_iter())
         {

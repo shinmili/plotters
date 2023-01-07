@@ -4,7 +4,7 @@ use super::builder::LabelAreaPosition;
 use super::context::ChartContext;
 use crate::coord::cartesian::{Cartesian2d, MeshLine};
 use crate::coord::ranged1d::{BoldPoints, LightPoints, Ranged, ValueFormatter};
-use crate::drawing::DrawingAreaErrorKind;
+use crate::drawing::DrawingAreaError;
 use crate::style::{AsRelative, Color, IntoTextStyle, RGBColor, ShapeStyle, SizeDesc, TextStyle};
 
 use plotters_backend::{DrawingBackend, FontDesc, FontFamily, FontStyle};
@@ -103,7 +103,7 @@ where
     }
 
     /// Draw the axes for the secondary coordinate system
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind> {
+    pub fn draw(&mut self) -> Result<(), DrawingAreaError> {
         self.style.draw()
     }
 
@@ -420,7 +420,7 @@ where
     }
 
     /// Draw the configured mesh on the target plot
-    pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind>
+    pub fn draw(&mut self) -> Result<(), DrawingAreaError>
     where
         X: ValueFormatter<<X as Ranged>::ValueType>,
         Y: ValueFormatter<<Y as Ranged>::ValueType>,
