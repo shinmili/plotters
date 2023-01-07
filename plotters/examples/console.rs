@@ -115,21 +115,20 @@ impl DrawingBackend for TextDrawingBackend {
         plotters_backend::rasterizer::draw_line(self, from, to, style)
     }
 
-    fn estimate_text_size<'a, S: Into<BackendTextStyle<'a>>>(
+    fn estimate_text_size<'a>(
         &self,
         text: &str,
-        _: S,
+        _: BackendTextStyle<'a>,
     ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
         Ok((text.len() as u32, 1))
     }
 
-    fn draw_text<'a, S: Into<BackendTextStyle<'a>>>(
+    fn draw_text<'a>(
         &mut self,
         text: &str,
-        style: S,
+        style: BackendTextStyle<'a>,
         pos: (i32, i32),
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
         let (width, height) = self.estimate_text_size(text, style)?;
         let (width, height) = (width as i32, height as i32);
         let dx = match style.anchor.h_pos {

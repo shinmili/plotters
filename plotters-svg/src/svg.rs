@@ -382,13 +382,12 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_text<'b, S: Into<BackendTextStyle<'b>>>(
+    fn draw_text<'b>(
         &mut self,
         text: &str,
-        style: S,
+        style: BackendTextStyle<'b>,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
         let color = style.color;
         if color.alpha == 0.0 {
             return Ok(());
@@ -643,15 +642,15 @@ mod test {
 
             let style = TextStyle::from(("sans-serif", 20).into_font())
                 .pos(Pos::new(HPos::Right, VPos::Top));
-            root.draw_text("right-align", style.clone(), (150, 50))
+            root.draw_text("right-align", style.clone().into(), (150, 50))
                 .unwrap();
 
             let style = style.pos(Pos::new(HPos::Center, VPos::Top));
-            root.draw_text("center-align", style.clone(), (150, 150))
+            root.draw_text("center-align", style.clone().into(), (150, 150))
                 .unwrap();
 
             let style = style.pos(Pos::new(HPos::Left, VPos::Top));
-            root.draw_text("left-align", style.clone(), (150, 200))
+            root.draw_text("left-align", style.clone().into(), (150, 200))
                 .unwrap();
         }
 

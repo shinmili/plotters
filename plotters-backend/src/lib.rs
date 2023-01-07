@@ -220,13 +220,12 @@ pub trait DrawingBackend: Sized {
     /// - `text`: The text to draw
     /// - `style`: The text style
     /// - `pos` : The text anchor point
-    fn draw_text<'a, TStyle: Into<BackendTextStyle<'a>>>(
+    fn draw_text<'a>(
         &mut self,
         text: &str,
-        style: TStyle,
+        style: BackendTextStyle<'a>,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
         let color = style.color;
         if color.alpha == 0.0 {
             return Ok(());
@@ -276,12 +275,11 @@ pub trait DrawingBackend: Sized {
     /// - `text`: The text to estimate
     /// - `font`: The font to estimate
     /// - *Returns* The estimated text size
-    fn estimate_text_size<'a, TStyle: Into<BackendTextStyle<'a>>>(
+    fn estimate_text_size<'a>(
         &self,
         text: &str,
-        style: TStyle,
+        style: BackendTextStyle<'a>,
     ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
         let backend = font::DefaultFontBackend;
         let font = backend
             .load_font(&FontDesc::new(style.family, style.size, style.style))

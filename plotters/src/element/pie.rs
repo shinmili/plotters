@@ -156,16 +156,21 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
 
             // ensure label's doesn't fall in the circle
             let label_size =
-                backend.estimate_text_size(&label.to_string(), self.label_style.clone())?;
+                backend.estimate_text_size(&label.to_string(), self.label_style.clone().into())?;
             // if on the left hand side of the pie, offset whole label to the left
             if mid_coord.0 <= self.center.0 {
                 mid_coord.0 -= label_size.0 as i32;
             }
             // put label
-            backend.draw_text(&label.to_string(), self.label_style.clone(), mid_coord)?;
+            backend.draw_text(
+                &label.to_string(),
+                self.label_style.clone().into(),
+                mid_coord,
+            )?;
             if let Some(percentage_style) = self.percentage_style.clone() {
                 let perc_label = format!("{:.1}%", (ratio * 100.0));
-                let label_size = backend.estimate_text_size(&perc_label, percentage_style)?;
+                let label_size =
+                    backend.estimate_text_size(&perc_label, percentage_style.into())?;
                 let text_x_mid = (label_size.0 as f64 / 2.0).round() as i32;
                 let text_y_mid = (label_size.1 as f64 / 2.0).round() as i32;
                 let perc_coord = theta_to_ordinal_coord(
@@ -181,7 +186,7 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
         // they have to go on top of the already drawn wedges, so require a new iteration.
         for (label, coord) in perc_labels {
             let style = self.percentage_style.as_ref().unwrap();
-            backend.draw_text(&label, style.clone(), coord)?;
+            backend.draw_text(&label, style.clone().into(), coord)?;
         }
         Ok(())
     }

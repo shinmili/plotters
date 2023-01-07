@@ -246,13 +246,12 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_text<'a, S: Into<BackendTextStyle<'a>>>(
+    fn draw_text<'a>(
         &mut self,
         text: &str,
-        style: S,
+        style: BackendTextStyle<'a>,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let style = style.into();
         let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         self.check_before_draw();
