@@ -3,9 +3,7 @@ use std::i32;
 
 use super::{Drawable, PointCollection};
 use crate::style::TextStyle;
-use plotters_backend::{
-    BackendCoord, DrawingBackend, DrawingErrorKind, FontDesc, FontResult, LayoutBox,
-};
+use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, FontResult, LayoutBox};
 
 /// A single line text element. This can be owned or borrowed string, dependents on
 /// `String` or `str` moved into.
@@ -118,42 +116,6 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
     }
 }
 
-fn layout_multiline_text<'a, F: FnMut(&'a str)>(
-    text: &'a str,
-    max_width: u32,
-    font: FontDesc<'a>,
-    mut func: F,
-) {
-    for line in text.lines() {
-        if max_width == 0 || line.is_empty() {
-            func(line);
-        } else {
-            let mut remaining = &line[0..];
-
-            while !remaining.is_empty() {
-                let mut left = 0;
-                while left < remaining.len() {
-                    let width = font.box_size(&remaining[0..=left]).unwrap_or((0, 0)).0 as i32;
-
-                    if width > max_width as i32 {
-                        break;
-                    }
-                    left += 1;
-                }
-
-                if left == 0 {
-                    left += 1;
-                }
-
-                let cur_line = &remaining[..left];
-                remaining = &remaining[left..];
-
-                func(cur_line);
-            }
-        }
-    }
-}
-
 impl<'a, T: Borrow<str>> MultiLineText<'a, BackendCoord, T> {
     /// Compute the line layout
     pub fn compute_line_layout(&self) -> FontResult<Vec<LayoutBox>> {
@@ -172,21 +134,14 @@ impl<'a, Coord> MultiLineText<'a, Coord, &'a str> {
     /// `text`: The text that is parsed
     /// `pos`: The position of the text
     /// `style`: The style for this text
-    /// `max_width`: The width of the multi-line text element, the line will break
-    /// into two lines if the line is wider than the max_width. If 0 is given, do not
-    /// do any line wrapping
     pub fn from_str<ST: Into<&'a str>, S: Into<TextStyle<'a>>>(
         text: ST,
         pos: Coord,
         style: S,
-        max_width: u32,
     ) -> Self {
         let text = text.into();
         let mut ret = MultiLineText::new(pos, style);
-
-        layout_multiline_text(text, max_width, ret.style.font.clone(), |l| {
-            ret.push_line(l)
-        });
+        ret.lines = text.lines().collect();
         ret
     }
 }
@@ -197,20 +152,9 @@ impl<'a, Coord> MultiLineText<'a, Coord, String> {
     /// `text`: The text that is parsed
     /// `pos`: The position of the text
     /// `style`: The style for this text
-    /// `max_width`: The width of the multi-line text element, the line will break
-    /// into two lines if the line is wider than the max_width. If 0 is given, do not
-    /// do any line wrapping
-    pub fn from_string<S: Into<TextStyle<'a>>>(
-        text: String,
-        pos: Coord,
-        style: S,
-        max_width: u32,
-    ) -> Self {
+    pub fn from_string<S: Into<TextStyle<'a>>>(text: String, pos: Coord, style: S) -> Self {
         let mut ret = MultiLineText::new(pos, style);
-
-        layout_multiline_text(text.as_str(), max_width, ret.style.font.clone(), |l| {
-            ret.push_line(l.to_string())
-        });
+        ret.lines = text.lines().map(|l| l.to_string()).collect();
         ret
     }
 }
