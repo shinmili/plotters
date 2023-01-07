@@ -105,7 +105,7 @@ impl<E: Error> Error for DrawingErrorKind<E> {}
 ///  If the drawing backend supports vector graphics, the other drawing APIs should be
 ///  override by the backend specific implementation. Otherwise, the default implementation
 ///  will use the pixel-based approach to draw other types of low-level shapes.
-pub trait DrawingBackend: Sized {
+pub trait DrawingBackend {
     /// The error type reported by the backend
     type ErrorType: Error + Send + Sync;
 

@@ -1,6 +1,6 @@
 use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
-pub fn draw_rect<B: DrawingBackend>(
+pub fn draw_rect<B: DrawingBackend + ?Sized>(
     b: &mut B,
     upper_left: BackendCoord,
     bottom_right: BackendCoord,

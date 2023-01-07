@@ -1,6 +1,6 @@
 use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
-pub fn draw_line<DB: DrawingBackend>(
+pub fn draw_line<DB: DrawingBackend + ?Sized>(
     back: &mut DB,
     mut from: BackendCoord,
     mut to: BackendCoord,

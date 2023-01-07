@@ -1,7 +1,7 @@
 use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
 fn draw_part_a<
-    B: DrawingBackend,
+    B: DrawingBackend + ?Sized,
     Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
 >(
     height: f64,
@@ -26,7 +26,7 @@ fn draw_part_a<
 }
 
 fn draw_part_b<
-    B: DrawingBackend,
+    B: DrawingBackend + ?Sized,
     Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
 >(
     from: f64,
@@ -41,7 +41,7 @@ fn draw_part_b<
 }
 
 fn draw_part_c<
-    B: DrawingBackend,
+    B: DrawingBackend + ?Sized,
     Draw: FnMut(i32, (f64, f64)) -> Result<(), DrawingErrorKind<B::ErrorType>>,
 >(
     r: i32,
@@ -83,7 +83,7 @@ fn draw_part_c<
     Ok(())
 }
 
-fn draw_sweep_line<B: DrawingBackend>(
+fn draw_sweep_line<B: DrawingBackend + ?Sized>(
     b: &mut B,
     style: BackendStyle,
     (x0, y0): BackendCoord,
@@ -121,7 +121,7 @@ fn draw_sweep_line<B: DrawingBackend>(
     Ok(())
 }
 
-fn draw_annulus<B: DrawingBackend>(
+fn draw_annulus<B: DrawingBackend + ?Sized>(
     b: &mut B,
     center: BackendCoord,
     radius: (u32, u32),
@@ -272,7 +272,7 @@ fn draw_annulus<B: DrawingBackend>(
     Ok(())
 }
 
-pub fn draw_circle<B: DrawingBackend>(
+pub fn draw_circle<B: DrawingBackend + ?Sized>(
     b: &mut B,
     center: BackendCoord,
     mut radius: u32,
