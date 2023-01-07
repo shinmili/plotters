@@ -46,7 +46,7 @@ impl<'a, Coord: 'a, DB: DrawingBackend, T: Borrow<str>> Drawable<DB> for Text<'a
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some(a) = points.next() {
-            return backend.draw_text(self.text.borrow(), &self.style, a);
+            return backend.draw_text(self.text.borrow(), self.style.clone(), a);
         }
         Ok(())
     }
@@ -206,7 +206,7 @@ impl<'a, Coord: 'a, DB: DrawingBackend, T: Borrow<str>> Drawable<DB>
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some(a) = points.next() {
             for (point, text) in self.layout_lines(a).zip(self.lines.iter()) {
-                backend.draw_text(text.borrow(), &self.style, point)?;
+                backend.draw_text(text.borrow(), self.style.clone(), point)?;
             }
         }
         Ok(())

@@ -382,25 +382,26 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_text<S: BackendTextStyle>(
+    fn draw_text<'b, S: Into<BackendTextStyle<'b>>>(
         &mut self,
         text: &str,
-        style: &S,
+        style: S,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let color = style.color();
+        let style = style.into();
+        let color = style.color;
         if color.alpha == 0.0 {
             return Ok(());
         }
 
         let (x0, y0) = pos;
-        let text_anchor = match style.anchor().h_pos {
+        let text_anchor = match style.anchor.h_pos {
             HPos::Left => "start",
             HPos::Right => "end",
             HPos::Center => "middle",
         };
 
-        let dy = match style.anchor().v_pos {
+        let dy = match style.anchor.v_pos {
             VPos::Top => "0.76em",
             VPos::Center => "0.5ex",
             VPos::Bottom => "-0.5ex",
@@ -436,19 +437,19 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
             ("y", format!("{}", y0)),
             ("dy", dy.to_owned()),
             ("text-anchor", text_anchor.to_string()),
-            ("font-family", style.family().as_str().to_string()),
-            ("font-size", format!("{}", style.size() / 1.24)),
+            ("font-family", style.family.as_str().to_string()),
+            ("font-size", format!("{}", style.size / 1.24)),
             ("opacity", make_svg_opacity(color)),
             ("fill", make_svg_color(color)),
         ];
 
-        match style.style() {
+        match style.style {
             FontStyle::Normal => {}
             FontStyle::Bold => attrs.push(("font-weight", "bold".to_string())),
             other_style => attrs.push(("font-style", other_style.as_str().to_string())),
         };
 
-        let trans = style.transform();
+        let trans = style.transform;
         match trans {
             FontTransform::Rotate90 => {
                 attrs.push(("transform", format!("rotate(90, {}, {})", x0, y0)))
@@ -642,13 +643,16 @@ mod test {
 
             let style = TextStyle::from(("sans-serif", 20).into_font())
                 .pos(Pos::new(HPos::Right, VPos::Top));
-            root.draw_text("right-align", &style, (150, 50)).unwrap();
+            root.draw_text("right-align", style.clone(), (150, 50))
+                .unwrap();
 
             let style = style.pos(Pos::new(HPos::Center, VPos::Top));
-            root.draw_text("center-align", &style, (150, 150)).unwrap();
+            root.draw_text("center-align", style.clone(), (150, 150))
+                .unwrap();
 
             let style = style.pos(Pos::new(HPos::Left, VPos::Top));
-            root.draw_text("left-align", &style, (150, 200)).unwrap();
+            root.draw_text("left-align", style.clone(), (150, 200))
+                .unwrap();
         }
 
         checked_save_file("test_text_alignments", &content);

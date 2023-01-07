@@ -124,7 +124,7 @@ pub mod text_anchor {
 }
 
 /// Specifying text transformations
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum FontTransform {
     /// Nothing to transform
     None,
@@ -197,45 +197,14 @@ impl<'a> From<&'a str> for FontStyle {
     }
 }
 
-/// The trait that abstracts a style of a text.
-///
-/// This is used because the the backend crate have no knowledge about how
-/// the text handling is implemented in plotters.
-///
-/// But the backend still wants to know some information about the font, for
-/// the backend doesn't handles text drawing, may want to call the `draw` method which
-/// is implemented by the plotters main crate. While for the backend that handles the
-/// text drawing, those font information provides instructions about how the text should be
-/// rendered: color, size, slant, anchor, font, etc.
-///
-/// This trait decouples the detailed implementaiton about the font and the backend code which
-/// wants to perfome some operation on the font.
-///
-pub trait BackendTextStyle {
-    fn color(&self) -> BackendColor {
-        BackendColor {
-            alpha: 1.0,
-            rgb: (0, 0, 0),
-        }
-    }
-
-    fn size(&self) -> f64 {
-        1.0
-    }
-
-    fn transform(&self) -> FontTransform {
-        FontTransform::None
-    }
-
-    fn style(&self) -> FontStyle {
-        FontStyle::Normal
-    }
-
-    fn anchor(&self) -> text_anchor::Pos {
-        text_anchor::Pos::default()
-    }
-
-    fn family(&self) -> FontFamily;
+#[derive(Clone, Copy)]
+pub struct BackendTextStyle<'a> {
+    pub color: BackendColor,
+    pub size: f64,
+    pub transform: FontTransform,
+    pub style: FontStyle,
+    pub anchor: text_anchor::Pos,
+    pub family: FontFamily<'a>,
 }
 
 #[cfg(test)]

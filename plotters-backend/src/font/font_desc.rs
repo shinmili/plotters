@@ -72,7 +72,7 @@ impl<'a> FontDesc<'a> {
     }
 
     /// Returns the font family
-    pub fn get_family(&self) -> FontFamily {
+    pub fn get_family(&self) -> FontFamily<'a> {
         self.family
     }
 

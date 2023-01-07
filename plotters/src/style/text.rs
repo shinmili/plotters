@@ -283,29 +283,17 @@ impl<'a, T: Into<FontDesc<'a>>> From<T> for TextStyle<'a> {
     }
 }
 
-impl<'a> BackendTextStyle for TextStyle<'a> {
-    fn color(&self) -> BackendColor {
-        self.color
-    }
-
-    fn size(&self) -> f64 {
-        self.font.get_size()
-    }
-
-    fn transform(&self) -> FontTransform {
-        self.font.get_transform()
-    }
-
-    fn style(&self) -> FontStyle {
-        self.font.get_style()
-    }
-
-    fn anchor(&self) -> text_anchor::Pos {
-        self.pos
-    }
-
-    fn family(&self) -> FontFamily {
-        self.font.get_family()
+impl<'a> From<TextStyle<'a>> for BackendTextStyle<'a> {
+    fn from(value: TextStyle<'a>) -> BackendTextStyle<'a> {
+        let TextStyle { color, font, pos } = value;
+        BackendTextStyle {
+            color,
+            size: font.get_size(),
+            transform: font.get_transform(),
+            style: font.get_style(),
+            anchor: pos,
+            family: font.get_family(),
+        }
     }
 }
 
