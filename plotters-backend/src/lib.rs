@@ -68,7 +68,7 @@ pub mod rasterizer;
 mod style;
 mod text;
 
-pub use font::{FontData, FontDesc, FontError, FontResult, IntoFont, LayoutBox};
+pub use font::{DefaultFontBackend, FontBackend, FontData, FontDesc, IntoFont, LayoutBox};
 pub use style::{BackendColor, BackendStyle};
 pub use text::{text_anchor, BackendTextStyle, FontFamily, FontStyle, FontTransform};
 
@@ -231,8 +231,12 @@ pub trait DrawingBackend: Sized {
             return Ok(());
         }
 
-        let layout = style
-            .layout_box(text)
+        let b = font::DefaultFontBackend;
+        let font = b
+            .load_font(&FontDesc::new(style.family(), style.size(), style.style()))
+            .map_err(|e| DrawingErrorKind::FontError(e))?;
+        let layout = font
+            .estimate_layout(style.size(), text)
             .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
         let ((min_x, min_y), (max_x, max_y)) = layout;
         let width = (max_x - min_x) as i32;
@@ -249,11 +253,12 @@ pub trait DrawingBackend: Sized {
         };
         let trans = style.transform();
         let (w, h) = self.get_size();
-        match style.draw(text, (0, 0), |x, y, color| {
+        match font.draw((0, 0), style.size(), text, |x, y, alpha| {
             let (x, y) = trans.transform(x + dx - min_x, y + dy - min_y);
             let (x, y) = (pos.0 + x, pos.1 + y);
+            let mix_color = style.color().mix(alpha as f64);
             if x >= 0 && x < w as i32 && y >= 0 && y < h as i32 {
-                self.draw_pixel((x, y), color)
+                self.draw_pixel((x, y), mix_color)
             } else {
                 Ok(())
             }
@@ -276,8 +281,12 @@ pub trait DrawingBackend: Sized {
         text: &str,
         style: &TStyle,
     ) -> Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        let layout = style
-            .layout_box(text)
+        let backend = font::DefaultFontBackend;
+        let font = backend
+            .load_font(&FontDesc::new(style.family(), style.size(), style.style()))
+            .map_err(|e| DrawingErrorKind::FontError(e))?;
+        let layout = font
+            .estimate_layout(style.size(), text)
             .map_err(|e| DrawingErrorKind::FontError(Box::new(e)))?;
         Ok((
             ((layout.1).0 - (layout.0).0) as u32,

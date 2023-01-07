@@ -1,9 +1,11 @@
-use std::borrow::Borrow;
 use std::i32;
+use std::{borrow::Borrow, error::Error};
 
 use super::{Drawable, PointCollection};
 use crate::style::TextStyle;
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, FontResult, LayoutBox};
+use plotters_backend::{
+    BackendCoord, DrawingBackend, DrawingErrorKind, FontBackend, FontData, LayoutBox,
+};
 
 /// A single line text element. This can be owned or borrowed string, dependents on
 /// `String` or `str` moved into.
@@ -87,11 +89,14 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
     }
 
     /// Estimate the multi-line text element's dimension
-    pub fn estimate_dimension(&self) -> FontResult<(i32, i32)> {
+    pub fn estimate_dimension(
+        &self,
+        font_backend: &impl FontBackend,
+    ) -> Result<(i32, i32), Box<dyn Error + Send + Sync>> {
         let (mut mx, mut my) = (0, 0);
 
         for ((x, y), t) in self.layout_lines((0, 0)).zip(self.lines.iter()) {
-            let (dx, dy) = self.style.font.box_size(t.borrow())?;
+            let (dx, dy) = self.compute_bounding_box_size(t.borrow(), font_backend)?;
             mx = mx.max(x + dx as i32);
             my = my.max(y + dy as i32);
         }
@@ -114,14 +119,35 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
             (x.round() as i32, y.round() as i32)
         })
     }
+
+    fn compute_bounding_box_size(
+        &self,
+        text: &str,
+        font_backend: &impl FontBackend,
+    ) -> Result<(u32, u32), Box<dyn Error + Send + Sync>> {
+        let font = font_backend.load_font(&self.style.font)?;
+        let ((min_x, min_y), (max_x, max_y)) = font
+            .estimate_layout(self.style.font.get_size(), text.borrow())
+            .map_err(|e| Box::new(e))?;
+        let (w, h) = self
+            .style
+            .font
+            .get_transform()
+            .transform(max_x - min_x, max_y - min_y);
+
+        Ok((w.unsigned_abs(), h.unsigned_abs()))
+    }
 }
 
 impl<'a, T: Borrow<str>> MultiLineText<'a, BackendCoord, T> {
     /// Compute the line layout
-    pub fn compute_line_layout(&self) -> FontResult<Vec<LayoutBox>> {
+    pub fn compute_line_layout(
+        &self,
+        font_backend: &impl FontBackend,
+    ) -> Result<Vec<LayoutBox>, Box<dyn Error + Send + Sync>> {
         let mut ret = vec![];
         for ((x, y), t) in self.layout_lines(self.coord).zip(self.lines.iter()) {
-            let (dx, dy) = self.style.font.box_size(t.borrow())?;
+            let (dx, dy) = self.compute_bounding_box_size(t.borrow(), font_backend)?;
             ret.push(((x, y), (x + dx as i32, y + dy as i32)));
         }
         Ok(ret)

@@ -4,8 +4,7 @@ use super::BLACK;
 pub use plotters_backend::text_anchor;
 use plotters_backend::text_anchor::Pos;
 use plotters_backend::{
-    BackendColor, BackendCoord, BackendStyle, BackendTextStyle, FontDesc, FontError, FontFamily,
-    FontStyle, FontTransform,
+    BackendColor, BackendTextStyle, FontDesc, FontFamily, FontStyle, FontTransform,
 };
 
 /// Style of a text
@@ -285,7 +284,6 @@ impl<'a, T: Into<FontDesc<'a>>> From<T> for TextStyle<'a> {
 }
 
 impl<'a> BackendTextStyle for TextStyle<'a> {
-    type FontError = FontError;
     fn color(&self) -> BackendColor {
         self.color
     }
@@ -302,30 +300,12 @@ impl<'a> BackendTextStyle for TextStyle<'a> {
         self.font.get_style()
     }
 
-    #[allow(clippy::type_complexity)]
-    fn layout_box(&self, text: &str) -> Result<((i32, i32), (i32, i32)), Self::FontError> {
-        self.font.layout_box(text)
-    }
-
     fn anchor(&self) -> text_anchor::Pos {
         self.pos
     }
 
     fn family(&self) -> FontFamily {
         self.font.get_family()
-    }
-
-    fn draw<E, DrawFunc: FnMut(i32, i32, BackendColor) -> Result<(), E>>(
-        &self,
-        text: &str,
-        pos: BackendCoord,
-        mut draw: DrawFunc,
-    ) -> Result<Result<(), E>, Self::FontError> {
-        let color = self.color.color();
-        self.font.draw(text, pos, move |x, y, a| {
-            let mix_color = color.mix(a as f64);
-            draw(x, y, mix_color)
-        })
     }
 }
 

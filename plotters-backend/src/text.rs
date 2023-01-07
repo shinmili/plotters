@@ -1,5 +1,4 @@
-use super::{BackendColor, BackendCoord};
-use std::error::Error;
+use super::BackendColor;
 
 /// Describes font family.
 /// This can be either a specific font family name, such as "arial",
@@ -213,9 +212,6 @@ impl<'a> From<&'a str> for FontStyle {
 /// wants to perfome some operation on the font.
 ///
 pub trait BackendTextStyle {
-    /// The error type of this text style implementation
-    type FontError: Error + Sync + Send + 'static;
-
     fn color(&self) -> BackendColor {
         BackendColor {
             alpha: 1.0,
@@ -240,16 +236,6 @@ pub trait BackendTextStyle {
     }
 
     fn family(&self) -> FontFamily;
-
-    #[allow(clippy::type_complexity)]
-    fn layout_box(&self, text: &str) -> Result<((i32, i32), (i32, i32)), Self::FontError>;
-
-    fn draw<E, DrawFunc: FnMut(i32, i32, BackendColor) -> Result<(), E>>(
-        &self,
-        text: &str,
-        pos: BackendCoord,
-        draw: DrawFunc,
-    ) -> Result<Result<(), E>, Self::FontError>;
 }
 
 #[cfg(test)]
