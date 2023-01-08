@@ -213,7 +213,7 @@ impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K
             backend.draw_line(
                 start_whisker(points[0]),
                 end_whisker(points[0]),
-                &self.style,
+                self.style.into(),
             )?;
 
             // |---[   |  ]----|
@@ -222,7 +222,7 @@ impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K
             backend.draw_line(
                 moved(points[0]),
                 moved(points[1]),
-                &self.style.color.to_backend_color(),
+                self.style.color.to_backend_color().into(),
             )?;
 
             // |---[   |  ]----|
@@ -231,22 +231,22 @@ impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K
             let corner2 = end_bar(points[1]);
             let upper_left = (corner1.0.min(corner2.0), corner1.1.min(corner2.1));
             let bottom_right = (corner1.0.max(corner2.0), corner1.1.max(corner2.1));
-            backend.draw_rect(upper_left, bottom_right, &self.style, false)?;
+            backend.draw_rect(upper_left, bottom_right, self.style.into(), false)?;
 
             // |---[   |  ]----|
             // ________^________
-            backend.draw_line(start_bar(points[2]), end_bar(points[2]), &self.style)?;
+            backend.draw_line(start_bar(points[2]), end_bar(points[2]), self.style.into())?;
 
             // |---[   |  ]----|
             // ____________^^^^_
-            backend.draw_line(moved(points[3]), moved(points[4]), &self.style)?;
+            backend.draw_line(moved(points[3]), moved(points[4]), self.style.into())?;
 
             // |---[   |  ]----|
             // ________________^
             backend.draw_line(
                 start_whisker(points[4]),
                 end_whisker(points[4]),
-                &self.style,
+                self.style.into(),
             )?;
         }
         Ok(())

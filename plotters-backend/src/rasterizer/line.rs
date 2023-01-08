@@ -1,16 +1,16 @@
 use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
-pub fn draw_line<DB: DrawingBackend, S: BackendStyle>(
+pub fn draw_line<DB: DrawingBackend>(
     back: &mut DB,
     mut from: BackendCoord,
     mut to: BackendCoord,
-    style: &S,
+    style: BackendStyle,
 ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
-    if style.color().alpha == 0.0 || style.stroke_width() == 0 {
+    if style.color.alpha == 0.0 || style.stroke_width == 0 {
         return Ok(());
     }
 
-    if style.stroke_width() != 1 {
+    if style.stroke_width != 1 {
         // If the line is wider than 1px, then we need to make it a polygon
         let v = (i64::from(to.0 - from.0), i64::from(to.1 - from.1));
         let l = ((v.0 * v.0 + v.1 * v.1) as f64).sqrt();
@@ -21,7 +21,7 @@ pub fn draw_line<DB: DrawingBackend, S: BackendStyle>(
 
         let v = (v.0 as f64 / l, v.1 as f64 / l);
 
-        let r = f64::from(style.stroke_width()) / 2.0;
+        let r = f64::from(style.stroke_width) / 2.0;
         let mut trans = [(v.1 * r, -v.0 * r), (-v.1 * r, v.0 * r)];
         let mut vertices = vec![];
 
@@ -44,7 +44,7 @@ pub fn draw_line<DB: DrawingBackend, S: BackendStyle>(
             std::mem::swap(&mut from, &mut to);
         }
         for y in from.1..=to.1 {
-            check_result!(back.draw_pixel((from.0, y), style.color()));
+            check_result!(back.draw_pixel((from.0, y), style.color));
         }
         return Ok(());
     }
@@ -54,7 +54,7 @@ pub fn draw_line<DB: DrawingBackend, S: BackendStyle>(
             std::mem::swap(&mut from, &mut to);
         }
         for x in from.0..=to.0 {
-            check_result!(back.draw_pixel((x, from.1), style.color()));
+            check_result!(back.draw_pixel((x, from.1), style.color));
         }
         return Ok(());
     }
@@ -82,9 +82,9 @@ pub fn draw_line<DB: DrawingBackend, S: BackendStyle>(
 
     let mut put_pixel = |(x, y): BackendCoord, b: f64| {
         if steep {
-            back.draw_pixel((y, x), style.color().mix(b))
+            back.draw_pixel((y, x), style.color.mix(b))
         } else {
-            back.draw_pixel((x, y), style.color().mix(b))
+            back.draw_pixel((x, y), style.color.mix(b))
         }
     };
 

@@ -8,12 +8,12 @@ use plotters_backend::{
     FontStyle, FontTransform,
 };
 
+use std::fmt::Write as _;
 use std::fs::File;
 #[allow(unused_imports)]
 use std::io::Cursor;
 use std::io::{BufWriter, Error, Write};
 use std::path::Path;
-use std::fmt::Write as _;
 
 fn make_svg_color(color: BackendColor) -> String {
     let (r, g, b) = color.rgb;
@@ -238,21 +238,21 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_line<S: BackendStyle>(
+    fn draw_line(
         &mut self,
         from: BackendCoord,
         to: BackendCoord,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
         self.open_tag(
             SVGTag::Line,
             &[
-                ("opacity", &make_svg_opacity(style.color())),
-                ("stroke", &make_svg_color(style.color())),
-                ("stroke-width", &format!("{}", style.stroke_width())),
+                ("opacity", &make_svg_opacity(style.color)),
+                ("stroke", &make_svg_color(style.color)),
+                ("stroke-width", &format!("{}", style.stroke_width)),
                 ("x1", &format!("{}", from.0)),
                 ("y1", &format!("{}", from.1)),
                 ("x2", &format!("{}", to.0)),
@@ -263,21 +263,21 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_rect<S: BackendStyle>(
+    fn draw_rect(
         &mut self,
         upper_left: BackendCoord,
         bottom_right: BackendCoord,
-        style: &S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
 
         let (fill, stroke) = if !fill {
-            ("none".to_string(), make_svg_color(style.color()))
+            ("none".to_string(), make_svg_color(style.color))
         } else {
-            (make_svg_color(style.color()), "none".to_string())
+            (make_svg_color(style.color), "none".to_string())
         };
 
         self.open_tag(
@@ -287,7 +287,7 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
                 ("y", &format!("{}", upper_left.1)),
                 ("width", &format!("{}", bottom_right.0 - upper_left.0)),
                 ("height", &format!("{}", bottom_right.1 - upper_left.1)),
-                ("opacity", &make_svg_opacity(style.color())),
+                ("opacity", &make_svg_opacity(style.color)),
                 ("fill", &fill),
                 ("stroke", &stroke),
             ],
@@ -297,21 +297,21 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
         self.open_tag(
             SVGTag::Polyline,
             &[
                 ("fill", "none"),
-                ("opacity", &make_svg_opacity(style.color())),
-                ("stroke", &make_svg_color(style.color())),
-                ("stroke-width", &format!("{}", style.stroke_width())),
+                ("opacity", &make_svg_opacity(style.color)),
+                ("stroke", &make_svg_color(style.color)),
+                ("stroke-width", &format!("{}", style.stroke_width)),
                 (
                     "points",
                     &path.into_iter().fold(String::new(), |mut s, (x, y)| {
@@ -325,19 +325,19 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
         self.open_tag(
             SVGTag::Polygon,
             &[
-                ("opacity", &make_svg_opacity(style.color())),
-                ("fill", &make_svg_color(style.color())),
+                ("opacity", &make_svg_opacity(style.color)),
+                ("fill", &make_svg_color(style.color)),
                 (
                     "points",
                     &path.into_iter().fold(String::new(), |mut s, (x, y)| {
@@ -351,20 +351,20 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
         Ok(())
     }
 
-    fn draw_circle<S: BackendStyle>(
+    fn draw_circle(
         &mut self,
         center: BackendCoord,
         radius: u32,
-        style: &S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
         let (stroke, fill) = if !fill {
-            (make_svg_color(style.color()), "none".to_string())
+            (make_svg_color(style.color), "none".to_string())
         } else {
-            ("none".to_string(), make_svg_color(style.color()))
+            ("none".to_string(), make_svg_color(style.color))
         };
         self.open_tag(
             SVGTag::Circle,
@@ -372,10 +372,10 @@ impl<'a> DrawingBackend for SVGBackend<'a> {
                 ("cx", &format!("{}", center.0)),
                 ("cy", &format!("{}", center.1)),
                 ("r", &format!("{}", radius)),
-                ("opacity", &make_svg_opacity(style.color())),
+                ("opacity", &make_svg_opacity(style.color)),
                 ("fill", &fill),
                 ("stroke", &stroke),
-                ("stroke-width", &format!("{}", style.stroke_width())),
+                ("stroke-width", &format!("{}", style.stroke_width)),
             ],
             true,
         );

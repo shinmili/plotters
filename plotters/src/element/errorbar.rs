@@ -193,14 +193,19 @@ impl<K, V, O: ErrorBarOrient<K, V>, DB: DrawingBackend> Drawable<DB> for ErrorBa
         let points: Vec<_> = points.take(3).collect();
 
         let (from, to) = O::ending_coord(points[0], self.width);
-        backend.draw_line(from, to, &self.style)?;
+        backend.draw_line(from, to, self.style.into())?;
 
         let (from, to) = O::ending_coord(points[2], self.width);
-        backend.draw_line(from, to, &self.style)?;
+        backend.draw_line(from, to, self.style.into())?;
 
-        backend.draw_line(points[0], points[2], &self.style)?;
+        backend.draw_line(points[0], points[2], self.style.into())?;
 
-        backend.draw_circle(points[1], self.width / 2, &self.style, self.style.filled)?;
+        backend.draw_circle(
+            points[1],
+            self.width / 2,
+            self.style.into(),
+            self.style.filled,
+        )?;
 
         Ok(())
     }

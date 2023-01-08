@@ -133,13 +133,13 @@ pub trait DrawingBackend: Sized {
     /// - `from`: The start point of the line
     /// - `to`: The end point of the line
     /// - `style`: The style of the line
-    fn draw_line<S: BackendStyle>(
+    fn draw_line(
         &mut self,
         from: BackendCoord,
         to: BackendCoord,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_line(self, from, to, style)
+        rasterizer::draw_line(self, from, to, style.into())
     }
 
     /// Draw a rectangle on the drawing backend
@@ -147,11 +147,11 @@ pub trait DrawingBackend: Sized {
     /// - `bottom_right`: The coordinate of the bottom-right corner of the rect
     /// - `style`: The style
     /// - `fill`: If the rectangle should be filled
-    fn draw_rect<S: BackendStyle>(
+    fn draw_rect(
         &mut self,
         upper_left: BackendCoord,
         bottom_right: BackendCoord,
-        style: &S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         rasterizer::draw_rect(self, upper_left, bottom_right, style, fill)
@@ -160,16 +160,16 @@ pub trait DrawingBackend: Sized {
     /// Draw a path on the drawing backend
     /// - `path`: The iterator of key points of the path
     /// - `style`: The style of the path
-    fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn draw_path<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        if style.color().alpha == 0.0 {
+        if style.color.alpha == 0.0 {
             return Ok(());
         }
 
-        if style.stroke_width() == 1 {
+        if style.stroke_width == 1 {
             let mut begin: Option<BackendCoord> = None;
             for end in path.into_iter() {
                 if let Some(begin) = begin {
@@ -183,8 +183,8 @@ pub trait DrawingBackend: Sized {
             }
         } else {
             let p: Vec<_> = path.into_iter().collect();
-            let v = rasterizer::polygonize(&p[..], style.stroke_width());
-            return self.fill_polygon(v, &style.color());
+            let v = rasterizer::polygonize(&p[..], style.stroke_width);
+            return self.fill_polygon(v, style.color.into());
         }
         Ok(())
     }
@@ -194,24 +194,24 @@ pub trait DrawingBackend: Sized {
     /// - `radius`: The radius of the circle
     /// - `style`: The style of the shape
     /// - `fill`: If the circle should be filled
-    fn draw_circle<S: BackendStyle>(
+    fn draw_circle(
         &mut self,
         center: BackendCoord,
         radius: u32,
-        style: &S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        rasterizer::draw_circle(self, center, radius, style, fill)
+        rasterizer::draw_circle(self, center, radius, style.into(), fill)
     }
 
-    fn fill_polygon<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
+    fn fill_polygon<I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         vert: I,
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         let vert_buf: Vec<_> = vert.into_iter().collect();
 
-        rasterizer::fill_polygon(self, &vert_buf[..], style)
+        rasterizer::fill_polygon(self, &vert_buf[..], style.into())
     }
 
     /// Draw a text on the drawing backend

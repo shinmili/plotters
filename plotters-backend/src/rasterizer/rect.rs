@@ -1,13 +1,13 @@
 use crate::{BackendCoord, BackendStyle, DrawingBackend, DrawingErrorKind};
 
-pub fn draw_rect<B: DrawingBackend, S: BackendStyle>(
+pub fn draw_rect<B: DrawingBackend>(
     b: &mut B,
     upper_left: BackendCoord,
     bottom_right: BackendCoord,
-    style: &S,
+    style: BackendStyle,
     fill: bool,
 ) -> Result<(), DrawingErrorKind<B::ErrorType>> {
-    if style.color().alpha == 0.0 {
+    if style.color.alpha == 0.0 {
         return Ok(());
     }
     let (upper_left, bottom_right) = (

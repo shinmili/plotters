@@ -1,5 +1,5 @@
 use super::color::{Color, RGBAColor};
-use plotters_backend::{BackendColor, BackendStyle};
+use plotters_backend::BackendStyle;
 
 /// Style for any shape
 #[derive(Copy, Clone)]
@@ -86,13 +86,11 @@ impl<T: Color> From<T> for ShapeStyle {
     }
 }
 
-impl BackendStyle for ShapeStyle {
-    /// Returns the color as interpreted by the backend.
-    fn color(&self) -> BackendColor {
-        self.color.to_backend_color()
-    }
-    /// Returns the stroke width.
-    fn stroke_width(&self) -> u32 {
-        self.stroke_width
+impl From<ShapeStyle> for BackendStyle {
+    fn from(value: ShapeStyle) -> Self {
+        BackendStyle {
+            color: value.color.to_backend_color(),
+            stroke_width: value.stroke_width,
+        }
     }
 }

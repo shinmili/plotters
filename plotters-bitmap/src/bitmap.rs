@@ -244,16 +244,16 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         Ok(())
     }
 
-    fn draw_line<S: BackendStyle>(
+    fn draw_line(
         &mut self,
         from: (i32, i32),
         to: (i32, i32),
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let alpha = style.color().alpha;
-        let (r, g, b) = style.color().rgb;
+        let alpha = style.color.alpha;
+        let (r, g, b) = style.color.rgb;
 
-        if (from.0 == to.0 || from.1 == to.1) && style.stroke_width() == 1 {
+        if (from.0 == to.0 || from.1 == to.1) && style.stroke_width == 1 {
             if alpha >= 1.0 {
                 if from.1 == to.1 {
                     P::fill_rect_fast(self, from, (to.0 + 1, to.1 + 1), r, g, b);
@@ -269,15 +269,15 @@ impl<'a, P: PixelFormat> DrawingBackend for BitMapBackend<'a, P> {
         plotters_backend::rasterizer::draw_line(self, from, to, style)
     }
 
-    fn draw_rect<S: BackendStyle>(
+    fn draw_rect(
         &mut self,
         upper_left: (i32, i32),
         bottom_right: (i32, i32),
-        style: &S,
+        style: BackendStyle,
         fill: bool,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let alpha = style.color().alpha;
-        let (r, g, b) = style.color().rgb;
+        let alpha = style.color.alpha;
+        let (r, g, b) = style.color.rgb;
         if fill {
             if alpha >= 1.0 {
                 P::fill_rect_fast(self, upper_left, bottom_right, r, g, b);

@@ -465,7 +465,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut backend = BitMapBackend::new("plotters-doc-data/1.png", (300, 200));
     // And if we want SVG backend
     // let backend = SVGBackend::new("output.svg", (800, 600));
-    backend.draw_rect((50, 50), (200, 150), &RED, true)?;
+    backend.draw_rect((50, 50), (200, 150), RED.into(), true)?;
     backend.present()?;
     Ok(())
 }

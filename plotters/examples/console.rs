@@ -86,11 +86,11 @@ impl DrawingBackend for TextDrawingBackend {
         Ok(())
     }
 
-    fn draw_line<S: BackendStyle>(
+    fn draw_line(
         &mut self,
         from: (i32, i32),
         to: (i32, i32),
-        style: &S,
+        style: BackendStyle,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
         if from.0 == to.0 {
             let x = from.0;
