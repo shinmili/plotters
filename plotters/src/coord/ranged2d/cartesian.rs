@@ -140,7 +140,7 @@ pub enum MeshLine<'a, X: Ranged, Y: Ranged> {
 
 impl<'a, X: Ranged, Y: Ranged> MeshLine<'a, X, Y> {
     /// Draw a single mesh line onto the backend
-    pub fn draw<DB: DrawingBackend>(
+    pub fn draw<DB: DrawingBackend + ?Sized>(
         &self,
         backend: &mut DB,
         style: &ShapeStyle,

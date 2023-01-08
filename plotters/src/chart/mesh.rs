@@ -7,20 +7,20 @@ use crate::coord::ranged1d::{BoldPoints, LightPoints, Ranged, ValueFormatter};
 use crate::drawing::DrawingAreaError;
 use crate::style::{AsRelative, Color, IntoTextStyle, RGBColor, ShapeStyle, SizeDesc, TextStyle};
 
-use plotters_backend::{DrawingBackend, FontDesc, FontFamily, FontStyle};
+use plotters_backend::{FontDesc, FontFamily, FontStyle};
 
 /// The style used to describe the mesh and axis for a secondary coordinate system.
-pub struct SecondaryMeshStyle<'a, 'b, X: Ranged, Y: Ranged, DB: DrawingBackend> {
-    style: MeshStyle<'a, 'b, X, Y, DB>,
+pub struct SecondaryMeshStyle<'a, 'b, 'e, X: Ranged, Y: Ranged> {
+    style: MeshStyle<'a, 'b, 'e, X, Y>,
 }
 
-impl<'a, 'b, XT, YT, X: Ranged<ValueType = XT>, Y: Ranged<ValueType = YT>, DB: DrawingBackend>
-    SecondaryMeshStyle<'a, 'b, X, Y, DB>
+impl<'a, 'b, 'e, XT, YT, X: Ranged<ValueType = XT>, Y: Ranged<ValueType = YT>>
+    SecondaryMeshStyle<'a, 'b, 'e, X, Y>
 where
     X: ValueFormatter<XT>,
     Y: ValueFormatter<YT>,
 {
-    pub(super) fn new(target: &'b mut ChartContext<'a, DB, Cartesian2d<X, Y>>) -> Self {
+    pub(super) fn new(target: &'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>) -> Self {
         let mut style = target.configure_mesh();
         style.draw_x_mesh = false;
         style.draw_y_mesh = false;
@@ -139,7 +139,7 @@ where
 }
 
 /// The struct that is used for tracking the configuration of a mesh of any chart
-pub struct MeshStyle<'a, 'b, X: Ranged, Y: Ranged, DB: DrawingBackend> {
+pub struct MeshStyle<'a, 'b, 'e, X: Ranged, Y: Ranged> {
     pub(super) parent_size: (u32, u32),
     pub(super) draw_x_mesh: bool,
     pub(super) draw_y_mesh: bool,
@@ -161,19 +161,18 @@ pub struct MeshStyle<'a, 'b, X: Ranged, Y: Ranged, DB: DrawingBackend> {
     pub(super) y_label_style: Option<TextStyle<'b>>,
     pub(super) format_x: Option<&'b dyn Fn(&X::ValueType) -> String>,
     pub(super) format_y: Option<&'b dyn Fn(&Y::ValueType) -> String>,
-    pub(super) target: Option<&'b mut ChartContext<'a, DB, Cartesian2d<X, Y>>>,
+    pub(super) target: Option<&'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>>,
     pub(super) _phantom_data: PhantomData<(X, Y)>,
     pub(super) x_tick_size: [i32; 2],
     pub(super) y_tick_size: [i32; 2],
 }
 
-impl<'a, 'b, X, Y, XT, YT, DB> MeshStyle<'a, 'b, X, Y, DB>
+impl<'a, 'b, 'e, X, Y, XT, YT> MeshStyle<'a, 'b, 'e, X, Y>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
-    DB: DrawingBackend,
 {
-    pub(crate) fn new(chart: &'b mut ChartContext<'a, DB, Cartesian2d<X, Y>>) -> Self {
+    pub(crate) fn new(chart: &'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>) -> Self {
         let base_tick_size = (5u32).percent().max(5).in_pixels(chart.plotting_area());
 
         let mut x_tick_size = [base_tick_size, base_tick_size];
@@ -218,11 +217,10 @@ where
     }
 }
 
-impl<'a, 'b, X, Y, DB> MeshStyle<'a, 'b, X, Y, DB>
+impl<'a, 'b, 'e, X, Y> MeshStyle<'a, 'b, 'e, X, Y>
 where
     X: Ranged,
     Y: Ranged,
-    DB: DrawingBackend,
 {
     /// Set all the tick mark to the same size
     /// `value`: The new size

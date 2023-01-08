@@ -53,11 +53,11 @@ impl<'a, Coord: 'a, Size: SizeDesc> PointCollection<'a, Coord> for &'a Cross<Coo
     }
 }
 
-impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for Cross<Coord, Size> {
+impl<Coord, Size: SizeDesc> Drawable for Cross<Coord, Size> {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         mut points: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
@@ -105,11 +105,11 @@ impl<'a, Coord: 'a, Size: SizeDesc> PointCollection<'a, Coord> for &'a TriangleM
     }
 }
 
-impl<Coord, DB: DrawingBackend, Size: SizeDesc> Drawable<DB> for TriangleMarker<Coord, Size> {
+impl<Coord, Size: SizeDesc> Drawable for TriangleMarker<Coord, Size> {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         mut points: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {

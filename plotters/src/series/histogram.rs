@@ -7,7 +7,6 @@ use crate::coord::cartesian::Cartesian2d;
 use crate::coord::ranged1d::{DiscreteRanged, Ranged};
 use crate::element::Rectangle;
 use crate::style::{Color, ShapeStyle, GREEN};
-use plotters_backend::DrawingBackend;
 
 pub trait HistogramType {}
 pub struct Vertical;
@@ -198,9 +197,7 @@ where
 
     See [`Histogram`] for more information and examples.
     */
-    pub fn vertical<ACoord, DB: DrawingBackend + 'a>(
-        parent: &ChartContext<DB, Cartesian2d<BR, ACoord>>,
-    ) -> Self
+    pub fn vertical<ACoord>(parent: &ChartContext<Cartesian2d<BR, ACoord>>) -> Self
     where
         ACoord: Ranged<ValueType = A>,
     {
@@ -220,9 +217,7 @@ where
 
     See [`Histogram`] for more information and examples.
     */
-    pub fn horizontal<ACoord, DB: DrawingBackend>(
-        parent: &ChartContext<DB, Cartesian2d<ACoord, BR>>,
-    ) -> Self
+    pub fn horizontal<ACoord>(parent: &ChartContext<Cartesian2d<ACoord, BR>>) -> Self
     where
         ACoord: Ranged<ValueType = A>,
     {

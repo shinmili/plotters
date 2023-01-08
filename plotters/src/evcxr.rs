@@ -30,7 +30,7 @@ impl std::fmt::Debug for SVGWrapper {
 
 /// Start drawing an evcxr figure
 pub fn evcxr_figure<
-    Draw: FnOnce(DrawingArea<SVGBackend, Shift>) -> Result<(), Box<dyn std::error::Error>>,
+    Draw: FnOnce(DrawingArea<'_, Shift>) -> Result<(), Box<dyn std::error::Error>>,
 >(
     size: (u32, u32),
     draw: Draw,

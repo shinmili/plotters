@@ -12,7 +12,7 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::error::Error;
 use std::iter::{once, repeat};
-use std::ops::Range;
+use std::ops::{DerefMut, Range};
 use std::rc::Rc;
 
 /// The representation of the rectangle in backend canvas
@@ -116,13 +116,13 @@ impl Rect {
 ///     1. Layout specification - Split the parent drawing area into sub-drawing-areas
 ///     2. Coordinate Translation - Allows guest coordinate system attached and used for drawing.
 ///     3. Element based drawing - drawing area provides the environment the element can be drawn onto it.
-pub struct DrawingArea<DB: DrawingBackend, CT: CoordTranslate> {
-    backend: Rc<RefCell<DB>>,
+pub struct DrawingArea<'a, CT: CoordTranslate> {
+    backend: Rc<RefCell<dyn DrawingBackend + 'a>>,
     rect: Rect,
     coord: CT,
 }
 
-impl<DB: DrawingBackend, CT: CoordTranslate + Clone> Clone for DrawingArea<DB, CT> {
+impl<'a, CT: CoordTranslate + Clone> Clone for DrawingArea<'a, CT> {
     fn clone(&self) -> Self {
         Self {
             backend: self.backend.clone(),
@@ -159,31 +159,25 @@ impl std::fmt::Display for DrawingAreaError {
 
 impl Error for DrawingAreaError {}
 
-impl<DB: DrawingBackend> From<DB> for DrawingArea<DB, Shift> {
+impl<'a, DB: DrawingBackend + 'a> From<DB> for DrawingArea<'a, Shift> {
     fn from(backend: DB) -> Self {
         Self::with_rc_cell(Rc::new(RefCell::new(backend)))
     }
 }
 
-impl<'a, DB: DrawingBackend> From<&'a Rc<RefCell<DB>>> for DrawingArea<DB, Shift> {
-    fn from(backend: &'a Rc<RefCell<DB>>) -> Self {
-        Self::with_rc_cell(backend.clone())
-    }
-}
-
 /// A type which can be converted into a root drawing area
-pub trait IntoDrawingArea: DrawingBackend + Sized {
+pub trait IntoDrawingArea<'a>: DrawingBackend + Sized {
     /// Convert the type into a root drawing area
-    fn into_drawing_area(self) -> DrawingArea<Self, Shift>;
+    fn into_drawing_area(self) -> DrawingArea<'a, Shift>;
 }
 
-impl<T: DrawingBackend> IntoDrawingArea for T {
-    fn into_drawing_area(self) -> DrawingArea<T, Shift> {
+impl<'a, T: DrawingBackend + 'a> IntoDrawingArea<'a> for T {
+    fn into_drawing_area(self) -> DrawingArea<'a, Shift> {
         self.into()
     }
 }
 
-impl<DB: DrawingBackend, X: Ranged, Y: Ranged> DrawingArea<DB, Cartesian2d<X, Y>> {
+impl<X: Ranged, Y: Ranged> DrawingArea<'_, Cartesian2d<X, Y>> {
     /// Draw the mesh on a area
     pub fn draw_mesh<DrawFunc, YH: KeyPointHint, XH: KeyPointHint>(
         &self,
@@ -192,7 +186,7 @@ impl<DB: DrawingBackend, X: Ranged, Y: Ranged> DrawingArea<DB, Cartesian2d<X, Y>
         x_count_max: XH,
     ) -> Result<(), DrawingAreaError>
     where
-        DrawFunc: FnMut(&mut DB, MeshLine<X, Y>) -> Result<(), DrawingErrorKind>,
+        DrawFunc: FnMut(&mut dyn DrawingBackend, MeshLine<X, Y>) -> Result<(), DrawingErrorKind>,
     {
         self.backend_ops(move |b| {
             self.coord
@@ -221,14 +215,14 @@ impl<DB: DrawingBackend, X: Ranged, Y: Ranged> DrawingArea<DB, Cartesian2d<X, Y>
     }
 }
 
-impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
+impl<'a, CT: CoordTranslate> DrawingArea<'a, CT> {
     /// Get the left upper conner of this area in the drawing backend
     pub fn get_base_pixel(&self) -> BackendCoord {
         (self.rect.x0, self.rect.y0)
     }
 
     /// Strip the applied coordinate specification and returns a shift-based drawing area
-    pub fn strip_coord_spec(&self) -> DrawingArea<DB, Shift> {
+    pub fn strip_coord_spec(&self) -> DrawingArea<'a, Shift> {
         DrawingArea {
             rect: self.rect.clone(),
             backend: self.backend.clone(),
@@ -237,7 +231,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 
     /// Strip the applied coordinate specification and returns a drawing area
-    pub fn use_screen_coord(&self) -> DrawingArea<DB, Shift> {
+    pub fn use_screen_coord(&self) -> DrawingArea<'a, Shift> {
         DrawingArea {
             rect: self.rect.clone(),
             backend: self.backend.clone(),
@@ -269,14 +263,14 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 
     /// Perform operation on the drawing backend
-    fn backend_ops<R, O: FnOnce(&mut DB) -> Result<R, DrawingErrorKind>>(
+    fn backend_ops<R, O: FnOnce(&mut dyn DrawingBackend) -> Result<R, DrawingErrorKind>>(
         &self,
         ops: O,
     ) -> Result<R, DrawingAreaError> {
         if let Ok(mut db) = self.backend.try_borrow_mut() {
             db.ensure_prepared()
                 .map_err(DrawingAreaError::BackendError)?;
-            ops(&mut db).map_err(DrawingAreaError::BackendError)
+            ops(db.deref_mut()).map_err(DrawingAreaError::BackendError)
         } else {
             Err(DrawingAreaError::SharingError)
         }
@@ -310,11 +304,11 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 
     /// Draw an high-level element
-    pub fn draw<'a, E, B>(&self, element: &'a E) -> Result<(), DrawingAreaError>
+    pub fn draw<'e, E, B>(&self, element: &'e E) -> Result<(), DrawingAreaError>
     where
         B: CoordMapper,
-        &'a E: PointCollection<'a, CT::From, B>,
-        E: Drawable<DB, B>,
+        &'e E: PointCollection<'e, CT::From, B>,
+        E: Drawable<B>,
     {
         let backend_coords = element.point_iter().into_iter().map(|p| {
             let b = p.borrow();
@@ -345,8 +339,8 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
     }
 }
 
-impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
-    fn with_rc_cell(backend: Rc<RefCell<DB>>) -> Self {
+impl<'a> DrawingArea<'a, Shift> {
+    fn with_rc_cell(backend: Rc<RefCell<dyn DrawingBackend + 'a>>) -> Self {
         let (x1, y1) = RefCell::borrow(backend.borrow()).get_size();
         Self {
             rect: Rect {
@@ -365,7 +359,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         mut self,
         left_upper: (A, B),
         dimension: (C, D),
-    ) -> DrawingArea<DB, Shift> {
+    ) -> DrawingArea<'a, Shift> {
         let left_upper = (left_upper.0.in_pixels(&self), left_upper.1.in_pixels(&self));
         let dimension = (dimension.0.in_pixels(&self), dimension.1.in_pixels(&self));
         self.rect.x0 = self.rect.x1.min(self.rect.x0 + left_upper.0);
@@ -380,7 +374,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
     }
 
     /// Apply a new coord transformation object and returns a new drawing area
-    pub fn apply_coord_spec<CT: CoordTranslate>(&self, coord_spec: CT) -> DrawingArea<DB, CT> {
+    pub fn apply_coord_spec<CT: CoordTranslate>(&self, coord_spec: CT) -> DrawingArea<'a, CT> {
         DrawingArea {
             rect: self.rect.clone(),
             backend: self.backend.clone(),
@@ -395,7 +389,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         bottom: SB,
         left: SL,
         right: SR,
-    ) -> DrawingArea<DB, Shift> {
+    ) -> DrawingArea<'a, Shift> {
         let left = left.in_pixels(self);
         let right = right.in_pixels(self);
         let top = top.in_pixels(self);
@@ -475,7 +469,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
     }
 
     /// Draw a title of the drawing area and return the remaining drawing area
-    pub fn titled<'a, S: Into<TextStyle<'a>>>(
+    pub fn titled<'b, S: Into<TextStyle<'b>>>(
         &self,
         text: &str,
         style: S,
@@ -526,7 +520,7 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
     }
 }
 
-impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
+impl<CT: CoordTranslate> DrawingArea<'_, CT> {
     /// Returns the coordinates by value
     pub fn into_coord_spec(self) -> CT {
         self.coord

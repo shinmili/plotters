@@ -4,7 +4,6 @@ use crate::coord::{
     ranged1d::{Ranged, ValueFormatter},
     ranged3d::{ProjectionMatrix, ProjectionMatrixBuilder},
 };
-use plotters_backend::DrawingBackend;
 
 mod draw_impl;
 
@@ -45,9 +44,8 @@ impl<X, Y, Z> Coord3D<X, Y, Z> {
     }
 }
 
-impl<'a, DB, X, Y, Z, XT, YT, ZT> ChartContext<'a, DB, Cartesian3d<X, Y, Z>>
+impl<'a, 'e, X, Y, Z, XT, YT, ZT> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>
 where
-    DB: DrawingBackend,
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
     Z: Ranged<ValueType = ZT> + ValueFormatter<ZT>,
@@ -94,15 +92,12 @@ where
 
     [`ChartContext::configure_mesh()`], a similar function for 2D plots
     */
-    pub fn configure_axes(&mut self) -> Axes3dStyle<'a, '_, X, Y, Z, DB> {
+    pub fn configure_axes(&mut self) -> Axes3dStyle<'a, '_, 'e, X, Y, Z> {
         Axes3dStyle::new(self)
     }
 }
 
-impl<'a, DB, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, DB, Cartesian3d<X, Y, Z>>
-where
-    DB: DrawingBackend,
-{
+impl<'a, 'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>> {
     /// Override the 3D projection matrix. This function allows to override the default projection
     /// matrix.
     /// - `pf`: A function that takes the default projection matrix configuration and returns the

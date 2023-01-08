@@ -4,28 +4,26 @@ use crate::drawing::DrawingAreaError;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
 use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
-use plotters_backend::{
-    BackendCoord, DefaultFontBackend, DrawingBackend, DrawingErrorKind, IntoFont,
-};
+use plotters_backend::{BackendCoord, DefaultFontBackend, DrawingErrorKind, IntoFont};
 
-type SeriesAnnoDrawFn<'a, DB> = dyn Fn(BackendCoord) -> DynElement<'a, DB, BackendCoord> + 'a;
+type SeriesAnnoDrawFn<'e> = dyn Fn(BackendCoord) -> DynElement<'e, BackendCoord> + 'e;
 
 /// The annotations (such as the label of the series, the legend element, etc)
 /// When a series is drawn onto a drawing area, an series annotation object
 /// is created and a mutable reference is returned.
-pub struct SeriesAnno<'a, DB: DrawingBackend> {
+pub struct SeriesAnno<'e> {
     label: Option<String>,
-    draw_func: Option<Box<SeriesAnnoDrawFn<'a, DB>>>,
+    draw_func: Option<Box<SeriesAnnoDrawFn<'e>>>,
 }
 
-impl<'a, DB: DrawingBackend> SeriesAnno<'a, DB> {
+impl<'e> SeriesAnno<'e> {
     #[allow(clippy::option_as_ref_deref)]
     pub(crate) fn get_label(&self) -> &str {
         // TODO: Change this when we bump the MSRV
         self.label.as_ref().map(|x| x.as_str()).unwrap_or("")
     }
 
-    pub(crate) fn get_draw_func(&self) -> Option<&SeriesAnnoDrawFn<'a, DB>> {
+    pub(crate) fn get_draw_func(&self) -> Option<&SeriesAnnoDrawFn<'e>> {
         self.draw_func.as_ref().map(|x| x.as_ref())
     }
 
@@ -60,7 +58,7 @@ impl<'a, DB: DrawingBackend> SeriesAnno<'a, DB> {
 
     See [`ChartContext::configure_series_labels()`] for more information and examples.
     */
-    pub fn legend<E: IntoDynElement<'a, DB, BackendCoord>, T: Fn(BackendCoord) -> E + 'a>(
+    pub fn legend<E: IntoDynElement<'e, BackendCoord>, T: Fn(BackendCoord) -> E + 'e>(
         &mut self,
         func: T,
     ) -> &mut Self {
@@ -122,8 +120,8 @@ impl SeriesLabelPosition {
 }
 
 /// The struct to specify the series label of a target chart context
-pub struct SeriesLabelStyle<'a, 'b, DB: DrawingBackend, CT: CoordTranslate> {
-    target: &'b mut ChartContext<'a, DB, CT>,
+pub struct SeriesLabelStyle<'a, 'b, 'e, CT: CoordTranslate> {
+    target: &'b mut ChartContext<'a, 'e, CT>,
     position: SeriesLabelPosition,
     legend_area_size: u32,
     border_style: ShapeStyle,
@@ -132,8 +130,8 @@ pub struct SeriesLabelStyle<'a, 'b, DB: DrawingBackend, CT: CoordTranslate> {
     margin: u32,
 }
 
-impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, DB, CT> {
-    pub(super) fn new(target: &'b mut ChartContext<'a, DB, CT>) -> Self {
+impl<'a, 'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, 'e, CT> {
+    pub(super) fn new(target: &'b mut ChartContext<'a, 'e, CT>) -> Self {
         Self {
             target,
             position: SeriesLabelPosition::MiddleRight,

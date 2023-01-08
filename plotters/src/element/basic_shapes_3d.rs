@@ -67,11 +67,11 @@ impl<'a, X: 'a, Y: 'a, Z: 'a> PointCollection<'a, (X, Y, Z), BackendCoordAndZ>
     }
 }
 
-impl<X, Y, Z, DB: DrawingBackend> Drawable<DB, BackendCoordAndZ> for Cuboid<X, Y, Z> {
+impl<X, Y, Z> Drawable<BackendCoordAndZ> for Cuboid<X, Y, Z> {
     fn draw<I: Iterator<Item = (BackendCoord, i32)>>(
         &self,
         points: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let vert: Vec<_> = points.collect();

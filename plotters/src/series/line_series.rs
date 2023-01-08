@@ -1,7 +1,5 @@
 use crate::element::{Circle, DynElement, IntoDynElement, PathElement};
 use crate::style::ShapeStyle;
-use plotters_backend::DrawingBackend;
-use std::marker::PhantomData;
 
 /**
 The line series object, which takes an iterator of data points in guest coordinate system
@@ -29,24 +27,22 @@ The result is a chart with three line series; two of them have their data points
 
 ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@64e0a28/apidoc/line_series_point_size.svg)
 */
-pub struct LineSeries<DB: DrawingBackend, Coord> {
+pub struct LineSeries<Coord> {
     style: ShapeStyle,
     data: Vec<Coord>,
     point_idx: usize,
     point_size: u32,
-    phantom: PhantomData<DB>,
 }
 
-impl<DB: DrawingBackend, Coord: Clone + 'static> Iterator for LineSeries<DB, Coord> {
-    type Item = DynElement<'static, DB, Coord>;
+impl<Coord: Clone + 'static> Iterator for LineSeries<Coord> {
+    type Item = DynElement<'static, Coord>;
     fn next(&mut self) -> Option<Self::Item> {
         if !self.data.is_empty() {
             if self.point_size > 0 && self.point_idx < self.data.len() {
                 let idx = self.point_idx;
                 self.point_idx += 1;
                 return Some(
-                    Circle::new(self.data[idx].clone(), self.point_size, self.style)
-                        .into_dyn(),
+                    Circle::new(self.data[idx].clone(), self.point_size, self.style).into_dyn(),
                 );
             }
             let mut data = vec![];
@@ -58,7 +54,7 @@ impl<DB: DrawingBackend, Coord: Clone + 'static> Iterator for LineSeries<DB, Coo
     }
 }
 
-impl<DB: DrawingBackend, Coord> LineSeries<DB, Coord> {
+impl<Coord> LineSeries<Coord> {
     /**
     Creates a new line series based on a data iterator and a given style.
 
@@ -70,7 +66,6 @@ impl<DB: DrawingBackend, Coord> LineSeries<DB, Coord> {
             data: iter.into_iter().collect(),
             point_size: 0,
             point_idx: 0,
-            phantom: PhantomData,
         }
     }
 

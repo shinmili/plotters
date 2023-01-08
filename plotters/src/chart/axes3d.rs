@@ -11,17 +11,15 @@ use super::Coord3D;
 
 use crate::drawing::DrawingAreaError;
 
-use plotters_backend::DrawingBackend;
-
 /**
 Implements 3D plot axes configurations.
 
 The best way to use this struct is by way of the [`configure_axes()`] function.
 See [`ChartContext::configure_axes()`] for more information and examples.
 */
-pub struct Axes3dStyle<'a, 'b, X: Ranged, Y: Ranged, Z: Ranged, DB: DrawingBackend> {
+pub struct Axes3dStyle<'a, 'b, 'e, X: Ranged, Y: Ranged, Z: Ranged> {
     pub(super) parent_size: (u32, u32),
-    pub(super) target: Option<&'b mut ChartContext<'a, DB, Cartesian3d<X, Y, Z>>>,
+    pub(super) target: Option<&'b mut ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>>,
     pub(super) tick_size: i32,
     pub(super) light_lines_limit: [usize; 3],
     pub(super) n_labels: [usize; 3],
@@ -36,12 +34,11 @@ pub struct Axes3dStyle<'a, 'b, X: Ranged, Y: Ranged, Z: Ranged, DB: DrawingBacke
     _phantom: PhantomData<&'a (X, Y, Z)>,
 }
 
-impl<'a, 'b, X, Y, Z, XT, YT, ZT, DB> Axes3dStyle<'a, 'b, X, Y, Z, DB>
+impl<'a, 'b, 'e, X, Y, Z, XT, YT, ZT> Axes3dStyle<'a, 'b, 'e, X, Y, Z>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
     Z: Ranged<ValueType = ZT> + ValueFormatter<ZT>,
-    DB: DrawingBackend,
 {
     /**
     Set the size of the tick marks.
@@ -212,7 +209,7 @@ where
     This is used internally by Plotters and should probably not be included in user code.
     See [`ChartContext::configure_axes()`] for more information and examples.
     */
-    pub(crate) fn new(chart: &'b mut ChartContext<'a, DB, Cartesian3d<X, Y, Z>>) -> Self {
+    pub(crate) fn new(chart: &'b mut ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>) -> Self {
         let parent_size = chart.drawing_area.dim_in_pixel();
         let base_tick_size = (5u32).percent().max(5).in_pixels(chart.plotting_area());
         let tick_size = base_tick_size;

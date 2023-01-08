@@ -14,7 +14,7 @@ use crate::drawing::DrawingArea;
 use crate::drawing::DrawingAreaError;
 use crate::element::{Drawable, PointCollection};
 
-use plotters_backend::{BackendCoord, DrawingBackend};
+use plotters_backend::BackendCoord;
 
 /// The chart context that has two coordinate system attached.
 /// This situation is quite common, for example, we with two different coodinate system.
@@ -24,9 +24,9 @@ use plotters_backend::{BackendCoord, DrawingBackend};
 /// Note: `DualCoordChartContext` is always deref to the chart context.
 /// - If you want to configure the secondary axis, method [DualCoordChartContext::configure_secondary_axes](struct.DualCoordChartContext.html#method.configure_secondary_axes)
 /// - If you want to draw a series using secondary coordinate system, use [DualCoordChartContext::draw_secondary_series](struct.DualCoordChartContext.html#method.draw_secondary_series). And method [ChartContext::draw_series](struct.ChartContext.html#method.draw_series) will always use primary coordinate spec.
-pub struct DualCoordChartContext<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate> {
-    pub(super) primary: ChartContext<'a, DB, CT1>,
-    pub(super) secondary: ChartContext<'a, DB, CT2>,
+pub struct DualCoordChartContext<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> {
+    pub(super) primary: ChartContext<'a, 'e, CT1>,
+    pub(super) secondary: ChartContext<'a, 'e, CT2>,
 }
 
 /// The chart state for a dual coord chart, see the detailed description for `ChartState` for more
@@ -38,9 +38,7 @@ pub struct DualCoordChartState<CT1: CoordTranslate, CT2: CoordTranslate> {
     secondary: ChartState<CT2>,
 }
 
-impl<DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
-    DualCoordChartContext<'_, DB, CT1, CT2>
-{
+impl<CT1: CoordTranslate, CT2: CoordTranslate> DualCoordChartContext<'_, '_, CT1, CT2> {
     /// Convert the chart context into a chart state, similar to [ChartContext::into_chart_state](struct.ChartContext.html#method.into_chart_state)
     pub fn into_chart_state(self) -> DualCoordChartState<CT1, CT2> {
         DualCoordChartState {
@@ -72,10 +70,10 @@ impl<DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
 
 impl<CT1: CoordTranslate, CT2: CoordTranslate> DualCoordChartState<CT1, CT2> {
     /// Restore the chart state on the given drawing area
-    pub fn restore<DB: DrawingBackend>(
+    pub fn restore<'a, 'e>(
         self,
-        area: &DrawingArea<DB, Shift>,
-    ) -> DualCoordChartContext<'_, DB, CT1, CT2> {
+        area: &DrawingArea<'a, Shift>,
+    ) -> DualCoordChartContext<'a, 'e, CT1, CT2> {
         let primary = self.primary.restore(area);
         let secondary = self
             .secondary
@@ -84,26 +82,24 @@ impl<CT1: CoordTranslate, CT2: CoordTranslate> DualCoordChartState<CT1, CT2> {
     }
 }
 
-impl<DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
-    From<DualCoordChartContext<'_, DB, CT1, CT2>> for DualCoordChartState<CT1, CT2>
+impl<CT1: CoordTranslate, CT2: CoordTranslate> From<DualCoordChartContext<'_, '_, CT1, CT2>>
+    for DualCoordChartState<CT1, CT2>
 {
-    fn from(chart: DualCoordChartContext<'_, DB, CT1, CT2>) -> DualCoordChartState<CT1, CT2> {
+    fn from(chart: DualCoordChartContext<'_, '_, CT1, CT2>) -> DualCoordChartState<CT1, CT2> {
         chart.into_chart_state()
     }
 }
 
-impl<'b, DB: DrawingBackend, CT1: CoordTranslate + Clone, CT2: CoordTranslate + Clone>
-    From<&'b DualCoordChartContext<'_, DB, CT1, CT2>> for DualCoordChartState<CT1, CT2>
+impl<'b, CT1: CoordTranslate + Clone, CT2: CoordTranslate + Clone>
+    From<&'b DualCoordChartContext<'_, '_, CT1, CT2>> for DualCoordChartState<CT1, CT2>
 {
-    fn from(chart: &'b DualCoordChartContext<'_, DB, CT1, CT2>) -> DualCoordChartState<CT1, CT2> {
+    fn from(chart: &'b DualCoordChartContext<'_, '_, CT1, CT2>) -> DualCoordChartState<CT1, CT2> {
         chart.to_chart_state()
     }
 }
 
-impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
-    DualCoordChartContext<'a, DB, CT1, CT2>
-{
-    pub(super) fn new(mut primary: ChartContext<'a, DB, CT1>, secondary_coord: CT2) -> Self {
+impl<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> DualCoordChartContext<'a, 'e, CT1, CT2> {
+    pub(super) fn new(mut primary: ChartContext<'a, 'e, CT1>, secondary_coord: CT2) -> Self {
         let secondary_drawing_area = primary
             .drawing_area
             .strip_coord_spec()
@@ -127,20 +123,18 @@ impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
     }
 
     /// Get a reference to the drawing area that uses the secondary coordinate system
-    pub fn secondary_plotting_area(&self) -> &DrawingArea<DB, CT2> {
+    pub fn secondary_plotting_area(&self) -> &DrawingArea<'a, CT2> {
         &self.secondary.drawing_area
     }
 
     /// Borrow a mutable reference to the chart context that uses the secondary
     /// coordinate system
-    pub fn borrow_secondary(&self) -> &ChartContext<'a, DB, CT2> {
+    pub fn borrow_secondary(&self) -> &ChartContext<'a, 'e, CT2> {
         &self.secondary
     }
 }
 
-impl<DB: DrawingBackend, CT1: CoordTranslate, CT2: ReverseCoordTranslate>
-    DualCoordChartContext<'_, DB, CT1, CT2>
-{
+impl<CT1: CoordTranslate, CT2: ReverseCoordTranslate> DualCoordChartContext<'_, '_, CT1, CT2> {
     /// Convert the chart context into the secondary coordinate translation function
     pub fn into_secondary_coord_trans(self) -> impl Fn(BackendCoord) -> Option<CT2::From> {
         let coord_spec = self.secondary.drawing_area.into_coord_spec();
@@ -148,8 +142,8 @@ impl<DB: DrawingBackend, CT1: CoordTranslate, CT2: ReverseCoordTranslate>
     }
 }
 
-impl<DB: DrawingBackend, CT1: ReverseCoordTranslate, CT2: ReverseCoordTranslate>
-    DualCoordChartContext<'_, DB, CT1, CT2>
+impl<CT1: ReverseCoordTranslate, CT2: ReverseCoordTranslate>
+    DualCoordChartContext<'_, '_, CT1, CT2>
 {
     /// Convert the chart context into a pair of closures that maps the pixel coordinate into the
     /// logical coordinate for both primary coordinate system and secondary coordinate system.
@@ -170,25 +164,25 @@ impl<DB: DrawingBackend, CT1: ReverseCoordTranslate, CT2: ReverseCoordTranslate>
 
 impl<
         'a,
-        DB: DrawingBackend,
+        'e,
         CT1: CoordTranslate,
         XT,
         YT,
         SX: Ranged<ValueType = XT>,
         SY: Ranged<ValueType = YT>,
-    > DualCoordChartContext<'a, DB, CT1, Cartesian2d<SX, SY>>
+    > DualCoordChartContext<'a, 'e, CT1, Cartesian2d<SX, SY>>
 where
     SX: ValueFormatter<XT>,
     SY: ValueFormatter<YT>,
 {
     /// Start configure the style for the secondary axes
-    pub fn configure_secondary_axes<'b>(&'b mut self) -> SecondaryMeshStyle<'a, 'b, SX, SY, DB> {
+    pub fn configure_secondary_axes<'b>(&'b mut self) -> SecondaryMeshStyle<'a, 'b, 'e, SX, SY> {
         SecondaryMeshStyle::new(&mut self.secondary)
     }
 }
 
-impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
-    DualCoordChartContext<'a, DB, Cartesian2d<X, Y>, Cartesian2d<SX, SY>>
+impl<'a, 'e, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
+    DualCoordChartContext<'a, 'e, Cartesian2d<X, Y>, Cartesian2d<SX, SY>>
 {
     /// Draw a series use the secondary coordinate system.
     /// - `series`: The series to draw
@@ -196,10 +190,10 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
     pub fn draw_secondary_series<E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaError>
+    ) -> Result<&mut SeriesAnno<'e>, DrawingAreaError>
     where
         for<'b> &'b E: PointCollection<'b, (SX::ValueType, SY::ValueType)>,
-        E: Drawable<DB>,
+        E: Drawable,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {
@@ -208,33 +202,33 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
     }
 }
 
-impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
-    Borrow<ChartContext<'a, DB, CT1>> for DualCoordChartContext<'a, DB, CT1, CT2>
+impl<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> Borrow<ChartContext<'a, 'e, CT1>>
+    for DualCoordChartContext<'a, 'e, CT1, CT2>
 {
-    fn borrow(&self) -> &ChartContext<'a, DB, CT1> {
+    fn borrow(&self) -> &ChartContext<'a, 'e, CT1> {
         &self.primary
     }
 }
 
-impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate>
-    BorrowMut<ChartContext<'a, DB, CT1>> for DualCoordChartContext<'a, DB, CT1, CT2>
+impl<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> BorrowMut<ChartContext<'a, 'e, CT1>>
+    for DualCoordChartContext<'a, 'e, CT1, CT2>
 {
-    fn borrow_mut(&mut self) -> &mut ChartContext<'a, DB, CT1> {
+    fn borrow_mut(&mut self) -> &mut ChartContext<'a, 'e, CT1> {
         &mut self.primary
     }
 }
 
-impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate> Deref
-    for DualCoordChartContext<'a, DB, CT1, CT2>
+impl<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> Deref
+    for DualCoordChartContext<'a, 'e, CT1, CT2>
 {
-    type Target = ChartContext<'a, DB, CT1>;
+    type Target = ChartContext<'a, 'e, CT1>;
     fn deref(&self) -> &Self::Target {
         self.borrow()
     }
 }
 
-impl<'a, DB: DrawingBackend, CT1: CoordTranslate, CT2: CoordTranslate> DerefMut
-    for DualCoordChartContext<'a, DB, CT1, CT2>
+impl<'a, 'e, CT1: CoordTranslate, CT2: CoordTranslate> DerefMut
+    for DualCoordChartContext<'a, 'e, CT1, CT2>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.borrow_mut()

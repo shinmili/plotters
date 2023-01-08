@@ -183,11 +183,11 @@ impl<'a, K: Clone, V: Clone, O: ErrorBarOrient<K, V>> PointCollection<'a, (O::XT
     }
 }
 
-impl<K, V, O: ErrorBarOrient<K, V>, DB: DrawingBackend> Drawable<DB> for ErrorBar<K, V, O> {
+impl<K, V, O: ErrorBarOrient<K, V>> Drawable for ErrorBar<K, V, O> {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         points: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.take(3).collect();

@@ -190,11 +190,11 @@ impl<'a, K: Clone, O: BoxplotOrient<K, f32>> PointCollection<'a, (O::XType, O::Y
     }
 }
 
-impl<K, DB: DrawingBackend, O: BoxplotOrient<K, f32>> Drawable<DB> for Boxplot<K, O> {
+impl<K, O: BoxplotOrient<K, f32>> Drawable for Boxplot<K, O> {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         points: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.take(5).collect();

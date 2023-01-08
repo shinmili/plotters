@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use plotters_backend::{DrawingBackend, FontTransform};
+use plotters_backend::FontTransform;
 
 use crate::chart::ChartContext;
 use crate::coord::{
@@ -15,7 +15,7 @@ use crate::style::{
     ShapeStyle, TextStyle,
 };
 
-impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesian2d<X, Y>> {
+impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
     /// The actual function that draws the mesh lines.
     /// It also returns the label that suppose to be there.
     #[allow(clippy::type_complexity)]
@@ -63,7 +63,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
 
     fn draw_axis(
         &self,
-        area: &DrawingArea<DB, Shift>,
+        area: &DrawingArea<'a, Shift>,
         axis_style: Option<&ShapeStyle>,
         orientation: (i16, i16),
         inward_labels: bool,
@@ -130,7 +130,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
     #[allow(clippy::cognitive_complexity)]
     fn draw_axis_and_labels(
         &self,
-        area: Option<&DrawingArea<DB, Shift>>,
+        area: Option<&DrawingArea<'a, Shift>>,
         axis_style: Option<&ShapeStyle>,
         labels: &[(i32, String)],
         label_style: &TextStyle,

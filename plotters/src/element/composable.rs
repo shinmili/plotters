@@ -2,7 +2,6 @@ use super::*;
 use plotters_backend::DrawingBackend;
 use std::borrow::Borrow;
 use std::iter::{once, Once};
-use std::marker::PhantomData;
 use std::ops::Add;
 
 /**
@@ -33,41 +32,36 @@ The result is a data series where each point consists of a circle, a cross, a pi
 ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@06d370f/apidoc/composable.svg)
 
 */
-pub struct EmptyElement<Coord, DB: DrawingBackend> {
+pub struct EmptyElement<Coord> {
     coord: Coord,
-    phantom: PhantomData<DB>,
 }
 
-impl<Coord, DB: DrawingBackend> EmptyElement<Coord, DB> {
+impl<Coord> EmptyElement<Coord> {
     /**
     An empty composable element. This is the starting point of a composed element.
 
     See [`EmptyElement`] for more information and examples.
     */
     pub fn at(coord: Coord) -> Self {
-        Self {
-            coord,
-            phantom: PhantomData,
-        }
+        Self { coord }
     }
 }
 
-impl<Coord, Other, DB: DrawingBackend> Add<Other> for EmptyElement<Coord, DB>
+impl<Coord, Other> Add<Other> for EmptyElement<Coord>
 where
-    Other: Drawable<DB>,
+    Other: Drawable,
     for<'a> &'a Other: PointCollection<'a, BackendCoord>,
 {
-    type Output = BoxedElement<Coord, DB, Other>;
+    type Output = BoxedElement<Coord, Other>;
     fn add(self, other: Other) -> Self::Output {
         BoxedElement {
             offset: self.coord,
             inner: other,
-            phantom: PhantomData,
         }
     }
 }
 
-impl<'a, Coord, DB: DrawingBackend> PointCollection<'a, Coord> for &'a EmptyElement<Coord, DB> {
+impl<'a, Coord> PointCollection<'a, Coord> for &'a EmptyElement<Coord> {
     type Point = &'a Coord;
     type IntoIter = Once<&'a Coord>;
     fn point_iter(self) -> Self::IntoIter {
@@ -75,11 +69,11 @@ impl<'a, Coord, DB: DrawingBackend> PointCollection<'a, Coord> for &'a EmptyElem
     }
 }
 
-impl<Coord, DB: DrawingBackend> Drawable<DB> for EmptyElement<Coord, DB> {
+impl<Coord> Drawable for EmptyElement<Coord> {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         _pos: I,
-        _backend: &mut DB,
+        _backend: &mut dyn DrawingBackend,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         Ok(())
@@ -92,15 +86,12 @@ A container for one drawable element, used for composition.
 This is used internally by Plotters and should probably not be included in user code.
 See [`EmptyElement`] for more information and examples.
 */
-pub struct BoxedElement<Coord, DB: DrawingBackend, A: Drawable<DB>> {
+pub struct BoxedElement<Coord, A: Drawable> {
     inner: A,
     offset: Coord,
-    phantom: PhantomData<DB>,
 }
 
-impl<'b, Coord, DB: DrawingBackend, A: Drawable<DB>> PointCollection<'b, Coord>
-    for &'b BoxedElement<Coord, DB, A>
-{
+impl<'b, Coord, A: Drawable> PointCollection<'b, Coord> for &'b BoxedElement<Coord, A> {
     type Point = &'b Coord;
     type IntoIter = Once<&'b Coord>;
     fn point_iter(self) -> Self::IntoIter {
@@ -108,15 +99,15 @@ impl<'b, Coord, DB: DrawingBackend, A: Drawable<DB>> PointCollection<'b, Coord>
     }
 }
 
-impl<Coord, DB: DrawingBackend, A> Drawable<DB> for BoxedElement<Coord, DB, A>
+impl<Coord, A> Drawable for BoxedElement<Coord, A>
 where
     for<'a> &'a A: PointCollection<'a, BackendCoord>,
-    A: Drawable<DB>,
+    A: Drawable,
 {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         mut pos: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x0, y0)) = pos.next() {
@@ -133,20 +124,19 @@ where
     }
 }
 
-impl<Coord, DB: DrawingBackend, My, Yours> Add<Yours> for BoxedElement<Coord, DB, My>
+impl<Coord, My, Yours> Add<Yours> for BoxedElement<Coord, My>
 where
-    My: Drawable<DB>,
+    My: Drawable,
     for<'a> &'a My: PointCollection<'a, BackendCoord>,
-    Yours: Drawable<DB>,
+    Yours: Drawable,
     for<'a> &'a Yours: PointCollection<'a, BackendCoord>,
 {
-    type Output = ComposedElement<Coord, DB, My, Yours>;
+    type Output = ComposedElement<Coord, My, Yours>;
     fn add(self, yours: Yours) -> Self::Output {
         ComposedElement {
             offset: self.offset,
             first: self.inner,
             second: yours,
-            phantom: PhantomData,
         }
     }
 }
@@ -157,22 +147,20 @@ A container for two drawable elements, used for composition.
 This is used internally by Plotters and should probably not be included in user code.
 See [`EmptyElement`] for more information and examples.
 */
-pub struct ComposedElement<Coord, DB: DrawingBackend, A, B>
+pub struct ComposedElement<Coord, A, B>
 where
-    A: Drawable<DB>,
-    B: Drawable<DB>,
+    A: Drawable,
+    B: Drawable,
 {
     first: A,
     second: B,
     offset: Coord,
-    phantom: PhantomData<DB>,
 }
 
-impl<'b, Coord, DB: DrawingBackend, A, B> PointCollection<'b, Coord>
-    for &'b ComposedElement<Coord, DB, A, B>
+impl<'b, Coord, A, B> PointCollection<'b, Coord> for &'b ComposedElement<Coord, A, B>
 where
-    A: Drawable<DB>,
-    B: Drawable<DB>,
+    A: Drawable,
+    B: Drawable,
 {
     type Point = &'b Coord;
     type IntoIter = Once<&'b Coord>;
@@ -181,17 +169,17 @@ where
     }
 }
 
-impl<Coord, DB: DrawingBackend, A, B> Drawable<DB> for ComposedElement<Coord, DB, A, B>
+impl<Coord, A, B> Drawable for ComposedElement<Coord, A, B>
 where
     for<'a> &'a A: PointCollection<'a, BackendCoord>,
     for<'b> &'b B: PointCollection<'b, BackendCoord>,
-    A: Drawable<DB>,
-    B: Drawable<DB>,
+    A: Drawable,
+    B: Drawable,
 {
     fn draw<I: Iterator<Item = BackendCoord>>(
         &self,
         mut pos: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x0, y0)) = pos.next() {
@@ -216,16 +204,16 @@ where
     }
 }
 
-impl<Coord, DB: DrawingBackend, A, B, C> Add<C> for ComposedElement<Coord, DB, A, B>
+impl<Coord, A, B, C> Add<C> for ComposedElement<Coord, A, B>
 where
-    A: Drawable<DB>,
+    A: Drawable,
     for<'a> &'a A: PointCollection<'a, BackendCoord>,
-    B: Drawable<DB>,
+    B: Drawable,
     for<'a> &'a B: PointCollection<'a, BackendCoord>,
-    C: Drawable<DB>,
+    C: Drawable,
     for<'a> &'a C: PointCollection<'a, BackendCoord>,
 {
-    type Output = ComposedElement<Coord, DB, A, ComposedElement<BackendCoord, DB, B, C>>;
+    type Output = ComposedElement<Coord, A, ComposedElement<BackendCoord, B, C>>;
     fn add(self, rhs: C) -> Self::Output {
         ComposedElement {
             offset: self.offset,
@@ -234,9 +222,7 @@ where
                 offset: (0, 0),
                 first: self.second,
                 second: rhs,
-                phantom: PhantomData,
             },
-            phantom: PhantomData,
         }
     }
 }

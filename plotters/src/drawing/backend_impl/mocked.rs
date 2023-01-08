@@ -284,7 +284,7 @@ pub fn create_mocked_drawing_area<F: FnOnce(&mut MockedBackend)>(
     width: u32,
     height: u32,
     setup: F,
-) -> DrawingArea<MockedBackend, Shift> {
+) -> DrawingArea<'static, Shift> {
     let mut backend = MockedBackend::new(width, height);
     setup(&mut backend);
     backend.into_drawing_area()

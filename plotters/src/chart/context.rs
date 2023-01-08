@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use plotters_backend::{BackendCoord, DrawingBackend};
+use plotters_backend::BackendCoord;
 
 use crate::chart::{SeriesAnno, SeriesLabelStyle};
 use crate::coord::{CoordTranslate, ReverseCoordTranslate, Shift};
@@ -22,15 +22,15 @@ Any plot/chart is abstracted as this type, and any data series can be placed to 
 
 See [`crate::series::LineSeries`] and [`ChartContext::configure_series_labels()`] for more information and examples
 */
-pub struct ChartContext<'a, DB: DrawingBackend, CT: CoordTranslate> {
-    pub(crate) x_label_area: [Option<DrawingArea<DB, Shift>>; 2],
-    pub(crate) y_label_area: [Option<DrawingArea<DB, Shift>>; 2],
-    pub(crate) drawing_area: DrawingArea<DB, CT>,
-    pub(crate) series_anno: Vec<SeriesAnno<'a, DB>>,
+pub struct ChartContext<'a, 'e, CT: CoordTranslate> {
+    pub(crate) x_label_area: [Option<DrawingArea<'a, Shift>>; 2],
+    pub(crate) y_label_area: [Option<DrawingArea<'a, Shift>>; 2],
+    pub(crate) drawing_area: DrawingArea<'a, CT>,
+    pub(crate) series_anno: Vec<SeriesAnno<'e>>,
     pub(crate) drawing_area_pos: (i32, i32),
 }
 
-impl<'a, DB: DrawingBackend, CT: ReverseCoordTranslate> ChartContext<'a, DB, CT> {
+impl<'a, 'e, CT: ReverseCoordTranslate> ChartContext<'a, 'e, CT> {
     /// Convert the chart context into an closure that can be used for coordinate translation
     pub fn into_coord_trans(self) -> impl Fn(BackendCoord) -> Option<CT::From> {
         let coord_spec = self.drawing_area.into_coord_spec();
@@ -38,7 +38,7 @@ impl<'a, DB: DrawingBackend, CT: ReverseCoordTranslate> ChartContext<'a, DB, CT>
     }
 }
 
-impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
+impl<'a, 'e, CT: CoordTranslate> ChartContext<'a, 'e, CT> {
     /**
     Configure the styles for drawing series labels in the chart
 
@@ -67,15 +67,12 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
 
     See [`crate::series::LineSeries`] for more information and examples
     */
-    pub fn configure_series_labels<'b>(&'b mut self) -> SeriesLabelStyle<'a, 'b, DB, CT>
-    where
-        DB: 'a,
-    {
+    pub fn configure_series_labels<'b>(&'b mut self) -> SeriesLabelStyle<'a, 'b, 'e, CT> {
         SeriesLabelStyle::new(self)
     }
 
     /// Get a reference of underlying plotting area
-    pub fn plotting_area(&self) -> &DrawingArea<DB, CT> {
+    pub fn plotting_area(&self) -> &DrawingArea<'a, CT> {
         &self.drawing_area
     }
 
@@ -93,7 +90,7 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
     where
         B: CoordMapper,
         for<'b> &'b E: PointCollection<'b, CT::From, B>,
-        E: Drawable<DB, B>,
+        E: Drawable<B>,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {
@@ -103,7 +100,7 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
         Ok(())
     }
 
-    pub(crate) fn alloc_series_anno(&mut self) -> &mut SeriesAnno<'a, DB> {
+    pub(crate) fn alloc_series_anno(&mut self) -> &mut SeriesAnno<'e> {
         let idx = self.series_anno.len();
         self.series_anno.push(SeriesAnno::new());
         &mut self.series_anno[idx]
@@ -117,11 +114,11 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
     pub fn draw_series<B, E, R, S>(
         &mut self,
         series: S,
-    ) -> Result<&mut SeriesAnno<'a, DB>, DrawingAreaError>
+    ) -> Result<&mut SeriesAnno<'e>, DrawingAreaError>
     where
         B: CoordMapper,
         for<'b> &'b E: PointCollection<'b, CT::From, B>,
-        E: Drawable<DB, B>,
+        E: Drawable<B>,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {

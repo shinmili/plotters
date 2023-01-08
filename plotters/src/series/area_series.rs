@@ -1,7 +1,6 @@
 use crate::element::{DynElement, IntoDynElement, PathElement, Polygon};
 use crate::style::colors::TRANSPARENT;
 use crate::style::ShapeStyle;
-use plotters_backend::DrawingBackend;
 
 /**
 An area series is similar to a line series but uses a filled polygon.
@@ -28,16 +27,15 @@ The result is a chart with three line series; one of them has a highlighted blue
 
 ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@b6703f7/apidoc/area_series.svg)
 */
-pub struct AreaSeries<DB: DrawingBackend, X: Clone, Y: Clone> {
+pub struct AreaSeries<X: Clone, Y: Clone> {
     area_style: ShapeStyle,
     border_style: ShapeStyle,
     baseline: Y,
     data: Vec<(X, Y)>,
     state: u32,
-    _p: std::marker::PhantomData<DB>,
 }
 
-impl<DB: DrawingBackend, X: Clone, Y: Clone> AreaSeries<DB, X, Y> {
+impl<X: Clone, Y: Clone> AreaSeries<X, Y> {
     /**
     Creates an area series with transparent border.
 
@@ -54,7 +52,6 @@ impl<DB: DrawingBackend, X: Clone, Y: Clone> AreaSeries<DB, X, Y> {
             data: iter.into_iter().collect(),
             state: 0,
             border_style: (&TRANSPARENT).into(),
-            _p: std::marker::PhantomData,
         }
     }
 
@@ -69,8 +66,8 @@ impl<DB: DrawingBackend, X: Clone, Y: Clone> AreaSeries<DB, X, Y> {
     }
 }
 
-impl<DB: DrawingBackend, X: Clone + 'static, Y: Clone + 'static> Iterator for AreaSeries<DB, X, Y> {
-    type Item = DynElement<'static, DB, (X, Y)>;
+impl<X: Clone + 'static, Y: Clone + 'static> Iterator for AreaSeries<X, Y> {
+    type Item = DynElement<'static, (X, Y)>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.state == 0 {
             let mut data: Vec<_> = self.data.clone();

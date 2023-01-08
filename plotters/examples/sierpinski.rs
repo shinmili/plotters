@@ -3,7 +3,7 @@ use plotters::prelude::*;
 
 pub fn sierpinski_carpet(
     depth: u32,
-    drawing_area: &DrawingArea<BitMapBackend, Shift>,
+    drawing_area: &DrawingArea<'_, Shift>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if depth > 0 {
         let sub_areas = drawing_area.split_evenly((3, 3));

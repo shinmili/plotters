@@ -38,11 +38,11 @@
     }
 
     // How to actually draw this element
-    impl <DB:DrawingBackend> Drawable<DB> for RedBoxedX {
+    impl Drawable for RedBoxedX {
         fn draw<I:Iterator<Item = BackendCoord>>(
             &self,
             mut pos: I,
-            backend: &mut DB,
+            backend: &mut dyn DrawingBackend,
             _: (u32, u32),
         ) -> Result<(), DrawingErrorKind> {
             let pos = pos.next().unwrap();
@@ -240,13 +240,13 @@ pub trait PointCollection<'a, Coord, CM = BackendCoordOnly> {
     fn point_iter(self) -> Self::IntoIter;
 }
 /// The trait indicates we are able to draw it on a drawing area
-pub trait Drawable<DB: DrawingBackend, CM: CoordMapper = BackendCoordOnly> {
+pub trait Drawable<CM: CoordMapper = BackendCoordOnly> {
     /// Actually draws the element. The key points is already translated into the
     /// image coordinate and can be used by DC directly
     fn draw<I: Iterator<Item = CM::Output>>(
         &self,
         pos: I,
-        backend: &mut DB,
+        backend: &mut dyn DrawingBackend,
         parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind>;
 }

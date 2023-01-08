@@ -3,7 +3,6 @@ use std::sync::Arc;
 use super::ChartContext;
 use crate::coord::{CoordTranslate, Shift};
 use crate::drawing::DrawingArea;
-use plotters_backend::DrawingBackend;
 
 /// A chart context state - This is the data that is needed to reconstruct the chart context
 /// without actually drawing the chart. This is useful when we want to do realtime rendering and
@@ -38,8 +37,8 @@ pub struct ChartState<CT: CoordTranslate> {
     coord: CT,
 }
 
-impl<'a, DB: DrawingBackend, CT: CoordTranslate> From<ChartContext<'a, DB, CT>> for ChartState<CT> {
-    fn from(chart: ChartContext<'a, DB, CT>) -> ChartState<CT> {
+impl<'a, 'e, CT: CoordTranslate> From<ChartContext<'a, 'e, CT>> for ChartState<CT> {
+    fn from(chart: ChartContext<'a, 'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
             drawing_area_size: chart.drawing_area.dim_in_pixel(),
@@ -48,7 +47,7 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> From<ChartContext<'a, DB, CT>> 
     }
 }
 
-impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
+impl<'a, 'e, CT: CoordTranslate> ChartContext<'a, 'e, CT> {
     /// Convert a chart context into a chart state, by doing so, the chart context is consumed and
     /// a saved chart state is created for later use. This is typically used in incrmental rendering. See documentation of `ChartState` for more detailed example.
     pub fn into_chart_state(self) -> ChartState<CT> {
@@ -68,12 +67,11 @@ impl<'a, DB: DrawingBackend, CT: CoordTranslate> ChartContext<'a, DB, CT> {
     }
 }
 
-impl<'a, DB, CT> From<&ChartContext<'a, DB, CT>> for ChartState<CT>
+impl<'a, 'e, CT> From<&ChartContext<'a, 'e, CT>> for ChartState<CT>
 where
-    DB: DrawingBackend,
     CT: CoordTranslate + Clone,
 {
-    fn from(chart: &ChartContext<'a, DB, CT>) -> ChartState<CT> {
+    fn from(chart: &ChartContext<'a, 'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
             drawing_area_size: chart.drawing_area.dim_in_pixel(),
@@ -82,7 +80,7 @@ where
     }
 }
 
-impl<'a, DB: DrawingBackend, CT: CoordTranslate + Clone> ChartContext<'a, DB, CT> {
+impl<'a, 'e, CT: CoordTranslate + Clone> ChartContext<'a, 'e, CT> {
     /// Make the chart context, do not consume the chart context and clone the coordinate spec
     pub fn to_chart_state(&self) -> ChartState<CT> {
         self.into()
@@ -94,10 +92,7 @@ impl<CT: CoordTranslate> ChartState<CT> {
     ///
     /// - `area`: The given drawing area where we want to restore the chart context
     /// - **returns** The newly created chart context
-    pub fn restore<'a, DB: DrawingBackend>(
-        self,
-        area: &DrawingArea<DB, Shift>,
-    ) -> ChartContext<'a, DB, CT> {
+    pub fn restore<'a, 'e>(self, area: &DrawingArea<'a, Shift>) -> ChartContext<'a, 'e, CT> {
         let area = area
             .clone()
             .shrink(self.drawing_area_pos, self.drawing_area_size);

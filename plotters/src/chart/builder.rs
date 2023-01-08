@@ -7,8 +7,6 @@ use crate::coord::Shift;
 use crate::drawing::{DrawingArea, DrawingAreaError};
 use crate::style::{IntoTextStyle, SizeDesc, TextStyle};
 
-use plotters_backend::DrawingBackend;
-
 /**
 Specifies one of the four label positions around the figure.
 
@@ -55,15 +53,15 @@ allows the high-level charting API being used on the drawing area.
 
 See [`ChartBuilder::on()`] for more information and examples.
 */
-pub struct ChartBuilder<'a, 'b, DB: DrawingBackend> {
+pub struct ChartBuilder<'a, 'b, 'c> {
     label_area_size: [u32; 4], // [upper, lower, left, right]
     overlap_plotting_area: [bool; 4],
-    root_area: &'a DrawingArea<DB, Shift>,
-    title: Option<(String, TextStyle<'b>)>,
+    root_area: &'a DrawingArea<'b, Shift>,
+    title: Option<(String, TextStyle<'c>)>,
     margin: [u32; 4],
 }
 
-impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
+impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
     /**
     Create a chart builder on the given drawing area
 
@@ -87,7 +85,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
     ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@42ecf52/apidoc/chart_builder_on.svg)
 
     */
-    pub fn on(root: &'a DrawingArea<DB, Shift>) -> Self {
+    pub fn on(root: &'a DrawingArea<'b, Shift>) -> Self {
         Self {
             label_area_size: [0; 4],
             root_area: root,
@@ -268,7 +266,7 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
 
     See [`ChartBuilder::on()`] for more information and examples.
     */
-    pub fn caption<S: AsRef<str>, Style: IntoTextStyle<'b>>(
+    pub fn caption<S: AsRef<str>, Style: IntoTextStyle<'c>>(
         &mut self,
         caption: S,
         style: Style,
@@ -285,12 +283,12 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
     #[deprecated(
         note = "`build_ranged` has been renamed to `build_cartesian_2d` and is to be removed in the future."
     )]
-    pub fn build_ranged<X: AsRangedCoord, Y: AsRangedCoord>(
+    pub fn build_ranged<'e, X: AsRangedCoord, Y: AsRangedCoord>(
         &mut self,
         x_spec: X,
         y_spec: Y,
     ) -> Result<
-        ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
+        ChartContext<'b, 'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
         DrawingAreaError,
     > {
         self.build_cartesian_2d(x_spec, y_spec)
@@ -306,12 +304,12 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
     See [`ChartBuilder::on()`] and [`ChartContext::configure_mesh()`] for more information and examples.
     */
     #[allow(clippy::type_complexity)]
-    pub fn build_cartesian_2d<X: AsRangedCoord, Y: AsRangedCoord>(
+    pub fn build_cartesian_2d<'e, X: AsRangedCoord, Y: AsRangedCoord>(
         &mut self,
         x_spec: X,
         y_spec: Y,
     ) -> Result<
-        ChartContext<'a, DB, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
+        ChartContext<'b, 'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
         DrawingAreaError,
     > {
         let mut label_areas = [None, None, None, None];
@@ -450,13 +448,13 @@ impl<'a, 'b, DB: DrawingBackend> ChartBuilder<'a, 'b, DB> {
     See [`ChartBuilder::on()`] and [`ChartContext::configure_axes()`] for more information and examples.
     */
     #[allow(clippy::type_complexity)]
-    pub fn build_cartesian_3d<X: AsRangedCoord, Y: AsRangedCoord, Z: AsRangedCoord>(
+    pub fn build_cartesian_3d<'e, X: AsRangedCoord, Y: AsRangedCoord, Z: AsRangedCoord>(
         &mut self,
         x_spec: X,
         y_spec: Y,
         z_spec: Z,
     ) -> Result<
-        ChartContext<'a, DB, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
+        ChartContext<'b, 'e, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
         DrawingAreaError,
     > {
         let mut drawing_area = DrawingArea::clone(self.root_area);

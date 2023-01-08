@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
 
-use plotters_backend::DrawingBackend;
-
 use crate::chart::ChartContext;
 use crate::coord::{
     cartesian::Cartesian3d,
@@ -23,9 +21,8 @@ pub(crate) struct KeyPoints3d<X: Ranged, Y: Ranged, Z: Ranged> {
     pub(crate) z_points: Vec<Z::ValueType>,
 }
 
-impl<'a, DB, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, DB, Cartesian3d<X, Y, Z>>
+impl<'a, 'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>
 where
-    DB: DrawingBackend,
     X::ValueType: Clone,
     Y::ValueType: Clone,
     Z::ValueType: Clone,
