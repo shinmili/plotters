@@ -1,6 +1,7 @@
 use std::borrow::{Borrow, Cow};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::error::Error;
 use std::i32;
 use std::sync::{Arc, RwLock};
 
@@ -22,7 +23,9 @@ use ttf_parser::{Face, GlyphId};
 use pathfinder_geometry::transform2d::Transform2F;
 use pathfinder_geometry::vector::{Vector2F, Vector2I};
 
-use super::{FontData, FontFamily, FontStyle, LayoutBox};
+use crate::FontDesc;
+
+use super::{FontBackend, FontData, FontFamily, FontStyle, LayoutBox};
 
 type FontResult<T> = Result<T, FontError>;
 
@@ -113,97 +116,106 @@ impl std::ops::Deref for FontExt {
     }
 }
 
-/// Lazily load font data. Font type doesn't own actual data, which
-/// lives in the cache.
-fn load_font_data(face: FontFamily, style: FontStyle) -> FontResult<FontExt> {
-    let key = match style {
-        FontStyle::Normal => Cow::Borrowed(face.as_str()),
-        _ => Cow::Owned(format!("{}, {}", face.as_str(), style.as_str())),
-    };
+pub struct TtfFontBackend;
 
-    // First, we try to find the font object for current thread
-    if let Some(font_object) = FONT_OBJECT_CACHE.with(|font_object_cache| {
-        font_object_cache
-            .borrow()
-            .get(Borrow::<str>::borrow(&key))
-            .map(Clone::clone)
-    }) {
-        return Ok(font_object);
-    }
+impl FontBackend for TtfFontBackend {
+    type Font = TtfFontData;
 
-    // Then we need to check if the data cache contains the font data
-    let cache = DATA_CACHE.read().unwrap();
-    if let Some(data) = cache.get(Borrow::<str>::borrow(&key)) {
-        return data.clone().map(|handle| {
-            handle
-                .load()
-                .map(FontExt::new)
-                .map_err(|e| FontError::FontLoadError(Arc::new(e)))
-        })?;
-    }
-    drop(cache);
-
-    // Otherwise we should load from system
-    let mut properties = Properties::new();
-    match style {
-        FontStyle::Normal => properties.style(Style::Normal),
-        FontStyle::Italic => properties.style(Style::Italic),
-        FontStyle::Oblique => properties.style(Style::Oblique),
-        FontStyle::Bold => properties.weight(Weight::BOLD),
-    };
-
-    let family = match face {
-        FontFamily::Serif => FamilyName::Serif,
-        FontFamily::SansSerif => FamilyName::SansSerif,
-        FontFamily::Monospace => FamilyName::Monospace,
-        FontFamily::Name(name) => FamilyName::Title(name.to_owned()),
-    };
-
-    let make_not_found_error =
-        || FontError::NoSuchFont(face.as_str().to_owned(), style.as_str().to_owned());
-
-    if let Ok(handle) = FONT_SOURCE
-        .with(|source| source.select_best_match(&[family, FamilyName::SansSerif], &properties))
-    {
-        let font = handle
-            .load()
-            .map(FontExt::new)
-            .map_err(|e| FontError::FontLoadError(Arc::new(e)));
-        let (should_cache, data) = match font.as_ref().map(|f| f.handle()) {
-            Ok(None) => (false, Err(FontError::LockError)),
-            Ok(Some(handle)) => (true, Ok(handle)),
-            Err(e) => (true, Err(e.clone())),
+    /// Lazily load font data. Font type doesn't own actual data, which
+    /// lives in the cache.
+    fn load_font(&self, desc: &FontDesc) -> Result<TtfFontData, Box<dyn Error + Send + Sync>> {
+        let style = desc.get_style();
+        let face = desc.get_family();
+        let key = match style {
+            FontStyle::Normal => Cow::Borrowed(face.as_str()),
+            _ => Cow::Owned(format!("{}, {}", face.as_str(), style.as_str())),
         };
 
-        if should_cache {
-            DATA_CACHE
-                .write()
-                .map_err(|_| FontError::LockError)?
-                .insert(key.clone().into_owned(), data);
+        // First, we try to find the font object for current thread
+        if let Some(font_object) = FONT_OBJECT_CACHE.with(|font_object_cache| {
+            font_object_cache
+                .borrow()
+                .get(Borrow::<str>::borrow(&key))
+                .map(Clone::clone)
+        }) {
+            return Ok(TtfFontData(font_object));
         }
 
-        if let Ok(font) = font.as_ref() {
-            FONT_OBJECT_CACHE.with(|font_object_cache| {
-                font_object_cache
-                    .borrow_mut()
-                    .insert(key.into_owned(), font.clone());
-            });
+        // Then we need to check if the data cache contains the font data
+        let cache = DATA_CACHE.read().unwrap();
+        if let Some(data) = cache.get(Borrow::<str>::borrow(&key)) {
+            return data
+                .clone()
+                .map(|handle| {
+                    handle.load().map(FontExt::new).map_err(|e| {
+                        Box::new(FontError::FontLoadError(Arc::new(e)))
+                            as Box<dyn Error + Send + Sync>
+                    })
+                })?
+                .map(TtfFontData);
         }
+        drop(cache);
 
-        return font;
+        // Otherwise we should load from system
+        let mut properties = Properties::new();
+        match style {
+            FontStyle::Normal => properties.style(Style::Normal),
+            FontStyle::Italic => properties.style(Style::Italic),
+            FontStyle::Oblique => properties.style(Style::Oblique),
+            FontStyle::Bold => properties.weight(Weight::BOLD),
+        };
+
+        let family = match face {
+            FontFamily::Serif => FamilyName::Serif,
+            FontFamily::SansSerif => FamilyName::SansSerif,
+            FontFamily::Monospace => FamilyName::Monospace,
+            FontFamily::Name(name) => FamilyName::Title(name.to_owned()),
+        };
+
+        let make_not_found_error =
+            || FontError::NoSuchFont(face.as_str().to_owned(), style.as_str().to_owned());
+
+        if let Ok(handle) = FONT_SOURCE
+            .with(|source| source.select_best_match(&[family, FamilyName::SansSerif], &properties))
+        {
+            let font = handle
+                .load()
+                .map(FontExt::new)
+                .map_err(|e| FontError::FontLoadError(Arc::new(e)));
+            let (should_cache, data) = match font.as_ref().map(|f| f.handle()) {
+                Ok(None) => (false, Err(FontError::LockError)),
+                Ok(Some(handle)) => (true, Ok(handle)),
+                Err(e) => (true, Err(e.clone())),
+            };
+
+            if should_cache {
+                DATA_CACHE
+                    .write()
+                    .map_err(|_| FontError::LockError)?
+                    .insert(key.clone().into_owned(), data);
+            }
+
+            if let Ok(font) = font.as_ref() {
+                FONT_OBJECT_CACHE.with(|font_object_cache| {
+                    font_object_cache
+                        .borrow_mut()
+                        .insert(key.into_owned(), font.clone());
+                });
+            }
+
+            return font
+                .map_err(|e| Box::new(e) as Box<dyn Error + Send + Sync>)
+                .map(TtfFontData);
+        }
+        Err(Box::new(make_not_found_error()))
     }
-    Err(make_not_found_error())
 }
 
 #[derive(Clone)]
-pub struct FontDataInternal(FontExt);
+pub struct TtfFontData(FontExt);
 
-impl FontData for FontDataInternal {
+impl FontData for TtfFontData {
     type ErrorType = FontError;
-
-    fn new(family: FontFamily, style: FontStyle) -> Result<Self, FontError> {
-        Ok(FontDataInternal(load_font_data(family, style)?))
-    }
 
     fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType> {
         let font = &self.0;
@@ -304,14 +316,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_font_cache() -> FontResult<()> {
+    fn test_font_cache() -> Result<(), Box<dyn Error + Send + Sync>> {
+        let backend = TtfFontBackend;
         // We cannot only check the size of font cache, because
         // the test case may be run in parallel. Thus the font cache
         // may contains other fonts.
-        let _a = load_font_data(FontFamily::Serif, FontStyle::Normal)?;
+        let _a = backend.load_font(&FontDesc::new(FontFamily::Serif, 12., FontStyle::Normal))?;
         assert!(DATA_CACHE.read().unwrap().contains_key("serif"));
 
-        let _b = load_font_data(FontFamily::Serif, FontStyle::Normal)?;
+        let _b = backend.load_font(&FontDesc::new(FontFamily::Serif, 12., FontStyle::Normal))?;
         assert!(DATA_CACHE.read().unwrap().contains_key("serif"));
 
         // TODO: Check they are the same

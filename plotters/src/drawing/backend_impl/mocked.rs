@@ -246,18 +246,18 @@ impl DrawingBackend for MockedBackend {
         Ok(())
     }
 
-    fn draw_text<S: BackendTextStyle>(
+    fn draw_text<'a>(
         &mut self,
         text: &str,
-        style: &S,
+        style: BackendTextStyle<'a>,
         pos: BackendCoord,
     ) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let color = style.color();
+        let color = style.color;
         let color = RGBAColor(color.rgb.0, color.rgb.1, color.rgb.2, color.alpha);
         self.check_before_draw();
         self.num_draw_text_call += 1;
         if let Some(mut checker) = self.check_draw_text.pop_front() {
-            checker(color, style.family().as_str(), style.size(), pos, text);
+            checker(color, style.family.as_str(), style.size, pos, text);
 
             if self.check_draw_text.is_empty() {
                 self.check_draw_text.push_back(checker);

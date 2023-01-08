@@ -5,12 +5,9 @@ use super::context::ChartContext;
 use crate::coord::cartesian::{Cartesian2d, MeshLine};
 use crate::coord::ranged1d::{BoldPoints, LightPoints, Ranged, ValueFormatter};
 use crate::drawing::DrawingAreaErrorKind;
-use crate::style::{
-    AsRelative, Color, FontDesc, FontFamily, FontStyle, IntoTextStyle, RGBColor, ShapeStyle,
-    SizeDesc, TextStyle,
-};
+use crate::style::{AsRelative, Color, IntoTextStyle, RGBColor, ShapeStyle, SizeDesc, TextStyle};
 
-use plotters_backend::DrawingBackend;
+use plotters_backend::{DrawingBackend, FontDesc, FontFamily, FontStyle};
 
 /// The style used to describe the mesh and axis for a secondary coordinate system.
 pub struct SecondaryMeshStyle<'a, 'b, X: Ranged, Y: Ranged, DB: DrawingBackend> {

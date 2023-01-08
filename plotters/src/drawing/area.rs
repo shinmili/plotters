@@ -344,7 +344,7 @@ impl<DB: DrawingBackend, CT: CoordTranslate> DrawingArea<DB, CT> {
         text: &str,
         style: &TextStyle,
     ) -> Result<(u32, u32), DrawingAreaError<DB>> {
-        self.backend_ops(move |b| b.estimate_text_size(text, style))
+        self.backend_ops(move |b| b.estimate_text_size(text, style.clone().into()))
     }
 }
 
@@ -490,12 +490,12 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         let (_, text_h) = self.estimate_text_size(text, &style)?;
         let y_padding = (text_h / 2).min(5) as i32;
 
-        let style = &style.pos(Pos::new(HPos::Center, VPos::Top));
+        let style = style.pos(Pos::new(HPos::Center, VPos::Top));
 
         self.backend_ops(|b| {
             b.draw_text(
                 text,
-                style,
+                style.clone().into(),
                 (self.rect.x0 + x_padding, self.rect.y0 + y_padding),
             )
         })?;
@@ -519,7 +519,13 @@ impl<DB: DrawingBackend> DrawingArea<DB, Shift> {
         style: &TextStyle,
         pos: BackendCoord,
     ) -> Result<(), DrawingAreaError<DB>> {
-        self.backend_ops(|b| b.draw_text(text, style, (pos.0 + self.rect.x0, pos.1 + self.rect.y0)))
+        self.backend_ops(|b| {
+            b.draw_text(
+                text,
+                style.clone().into(),
+                (pos.0 + self.rect.x0, pos.1 + self.rect.y0),
+            )
+        })
     }
 }
 

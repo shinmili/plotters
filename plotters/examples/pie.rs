@@ -17,8 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut pie = Pie::new(&center, &radius, &sizes, &colors, &labels);
     pie.start_angle(66.0);
-    pie.label_style((("sans-serif", 50).into_font()).color(&(ORANGE)));
-    pie.percentages((("sans-serif", radius * 0.08).into_font()).color(&BLACK));
+    let label_font = ("sans-serif", 50).into_font();
+    pie.label_style(label_font.color(&(ORANGE)));
+    let percentage_font = ("sans-serif", radius * 0.08).into_font();
+    pie.percentages(percentage_font.color(&BLACK));
     root_area.draw(&pie)?;
 
     Ok(())

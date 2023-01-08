@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use plotters_backend::DrawingBackend;
+use plotters_backend::{DrawingBackend, FontTransform};
 
 use crate::chart::ChartContext;
 use crate::coord::{
@@ -12,7 +12,7 @@ use crate::drawing::{DrawingArea, DrawingAreaErrorKind};
 use crate::element::PathElement;
 use crate::style::{
     text_anchor::{HPos, Pos, VPos},
-    FontTransform, ShapeStyle, TextStyle,
+    ShapeStyle, TextStyle,
 };
 
 impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesian2d<X, Y>> {
@@ -119,10 +119,7 @@ impl<'a, DB: DrawingBackend, X: Ranged, Y: Ranged> ChartContext<'a, DB, Cartesia
                 y1 = axis_range.end;
             }
 
-            area.draw(&PathElement::new(
-                vec![(x0, y0), (x1, y1)],
-                *axis_style,
-            ))?;
+            area.draw(&PathElement::new(vec![(x0, y0), (x1, y1)], *axis_style))?;
         }
 
         Ok(axis_range)

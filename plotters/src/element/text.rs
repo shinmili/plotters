@@ -1,9 +1,11 @@
-use std::borrow::Borrow;
 use std::i32;
+use std::{borrow::Borrow, error::Error};
 
 use super::{Drawable, PointCollection};
-use crate::style::{FontDesc, FontResult, LayoutBox, TextStyle};
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use crate::style::TextStyle;
+use plotters_backend::{
+    BackendCoord, DrawingBackend, DrawingErrorKind, FontBackend, FontData, LayoutBox,
+};
 
 /// A single line text element. This can be owned or borrowed string, dependents on
 /// `String` or `str` moved into.
@@ -44,7 +46,7 @@ impl<'a, Coord: 'a, DB: DrawingBackend, T: Borrow<str>> Drawable<DB> for Text<'a
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some(a) = points.next() {
-            return backend.draw_text(self.text.borrow(), &self.style, a);
+            return backend.draw_text(self.text.borrow(), self.style.clone().into(), a);
         }
         Ok(())
     }
@@ -87,11 +89,14 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
     }
 
     /// Estimate the multi-line text element's dimension
-    pub fn estimate_dimension(&self) -> FontResult<(i32, i32)> {
+    pub fn estimate_dimension(
+        &self,
+        font_backend: &impl FontBackend,
+    ) -> Result<(i32, i32), Box<dyn Error + Send + Sync>> {
         let (mut mx, mut my) = (0, 0);
 
         for ((x, y), t) in self.layout_lines((0, 0)).zip(self.lines.iter()) {
-            let (dx, dy) = self.style.font.box_size(t.borrow())?;
+            let (dx, dy) = self.compute_bounding_box_size(t.borrow(), font_backend)?;
             mx = mx.max(x + dx as i32);
             my = my.max(y + dy as i32);
         }
@@ -114,50 +119,35 @@ impl<'a, Coord, T: Borrow<str>> MultiLineText<'a, Coord, T> {
             (x.round() as i32, y.round() as i32)
         })
     }
-}
 
-fn layout_multiline_text<'a, F: FnMut(&'a str)>(
-    text: &'a str,
-    max_width: u32,
-    font: FontDesc<'a>,
-    mut func: F,
-) {
-    for line in text.lines() {
-        if max_width == 0 || line.is_empty() {
-            func(line);
-        } else {
-            let mut remaining = &line[0..];
+    fn compute_bounding_box_size(
+        &self,
+        text: &str,
+        font_backend: &impl FontBackend,
+    ) -> Result<(u32, u32), Box<dyn Error + Send + Sync>> {
+        let font = font_backend.load_font(&self.style.font)?;
+        let ((min_x, min_y), (max_x, max_y)) = font
+            .estimate_layout(self.style.font.get_size(), text.borrow())
+            .map_err(|e| Box::new(e))?;
+        let (w, h) = self
+            .style
+            .font
+            .get_transform()
+            .transform(max_x - min_x, max_y - min_y);
 
-            while !remaining.is_empty() {
-                let mut left = 0;
-                while left < remaining.len() {
-                    let width = font.box_size(&remaining[0..=left]).unwrap_or((0, 0)).0 as i32;
-
-                    if width > max_width as i32 {
-                        break;
-                    }
-                    left += 1;
-                }
-
-                if left == 0 {
-                    left += 1;
-                }
-
-                let cur_line = &remaining[..left];
-                remaining = &remaining[left..];
-
-                func(cur_line);
-            }
-        }
+        Ok((w.unsigned_abs(), h.unsigned_abs()))
     }
 }
 
 impl<'a, T: Borrow<str>> MultiLineText<'a, BackendCoord, T> {
     /// Compute the line layout
-    pub fn compute_line_layout(&self) -> FontResult<Vec<LayoutBox>> {
+    pub fn compute_line_layout(
+        &self,
+        font_backend: &impl FontBackend,
+    ) -> Result<Vec<LayoutBox>, Box<dyn Error + Send + Sync>> {
         let mut ret = vec![];
         for ((x, y), t) in self.layout_lines(self.coord).zip(self.lines.iter()) {
-            let (dx, dy) = self.style.font.box_size(t.borrow())?;
+            let (dx, dy) = self.compute_bounding_box_size(t.borrow(), font_backend)?;
             ret.push(((x, y), (x + dx as i32, y + dy as i32)));
         }
         Ok(ret)
@@ -170,21 +160,14 @@ impl<'a, Coord> MultiLineText<'a, Coord, &'a str> {
     /// `text`: The text that is parsed
     /// `pos`: The position of the text
     /// `style`: The style for this text
-    /// `max_width`: The width of the multi-line text element, the line will break
-    /// into two lines if the line is wider than the max_width. If 0 is given, do not
-    /// do any line wrapping
     pub fn from_str<ST: Into<&'a str>, S: Into<TextStyle<'a>>>(
         text: ST,
         pos: Coord,
         style: S,
-        max_width: u32,
     ) -> Self {
         let text = text.into();
         let mut ret = MultiLineText::new(pos, style);
-
-        layout_multiline_text(text, max_width, ret.style.font.clone(), |l| {
-            ret.push_line(l)
-        });
+        ret.lines = text.lines().collect();
         ret
     }
 }
@@ -195,20 +178,9 @@ impl<'a, Coord> MultiLineText<'a, Coord, String> {
     /// `text`: The text that is parsed
     /// `pos`: The position of the text
     /// `style`: The style for this text
-    /// `max_width`: The width of the multi-line text element, the line will break
-    /// into two lines if the line is wider than the max_width. If 0 is given, do not
-    /// do any line wrapping
-    pub fn from_string<S: Into<TextStyle<'a>>>(
-        text: String,
-        pos: Coord,
-        style: S,
-        max_width: u32,
-    ) -> Self {
+    pub fn from_string<S: Into<TextStyle<'a>>>(text: String, pos: Coord, style: S) -> Self {
         let mut ret = MultiLineText::new(pos, style);
-
-        layout_multiline_text(text.as_str(), max_width, ret.style.font.clone(), |l| {
-            ret.push_line(l.to_string())
-        });
+        ret.lines = text.lines().map(|l| l.to_string()).collect();
         ret
     }
 }
@@ -234,7 +206,7 @@ impl<'a, Coord: 'a, DB: DrawingBackend, T: Borrow<str>> Drawable<DB>
     ) -> Result<(), DrawingErrorKind<DB::ErrorType>> {
         if let Some(a) = points.next() {
             for (point, text) in self.layout_lines(a).zip(self.lines.iter()) {
-                backend.draw_text(text.borrow(), &self.style, point)?;
+                backend.draw_text(text.borrow(), self.style.clone().into(), point)?;
             }
         }
         Ok(())

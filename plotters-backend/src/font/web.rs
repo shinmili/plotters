@@ -1,4 +1,7 @@
-use super::{FontData, FontFamily, FontStyle, LayoutBox};
+use std::error::Error;
+
+use super::{FontData, LayoutBox};
+use crate::{FontBackend, FontDesc};
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlElement};
 
@@ -15,19 +18,27 @@ impl std::fmt::Display for FontError {
     }
 }
 
-impl std::error::Error for FontError {}
+impl Error for FontError {}
 
-#[derive(Clone)]
-pub struct FontDataInternal(String, String);
+pub struct WebFontBackend;
 
-impl FontData for FontDataInternal {
-    type ErrorType = FontError;
-    fn new(family: FontFamily, style: FontStyle) -> Result<Self, FontError> {
-        Ok(FontDataInternal(
-            family.as_str().into(),
-            style.as_str().into(),
+impl FontBackend for WebFontBackend {
+    type Font = WebFontData;
+
+    fn load_font(&self, desc: &FontDesc) -> Result<Self::Font, Box<dyn Error + Send + Sync>> {
+        Ok(WebFontData(
+            desc.get_family().as_str().into(),
+            desc.get_style().as_str().into(),
         ))
     }
+}
+
+#[derive(Clone)]
+pub struct WebFontData(String, String);
+
+impl FontData for WebFontData {
+    type ErrorType = FontError;
+
     fn estimate_layout(&self, size: f64, text: &str) -> Result<LayoutBox, Self::ErrorType> {
         let window = window().unwrap();
         let document = window.document().unwrap();

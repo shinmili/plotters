@@ -1,8 +1,8 @@
 use crate::{
     element::{Drawable, PointCollection},
-    style::{IntoFont, RGBColor, TextStyle, BLACK},
+    style::{RGBColor, TextStyle, BLACK},
 };
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, IntoFont};
 use std::{error::Error, f64::consts::PI, fmt::Display};
 
 #[derive(Debug)]
@@ -151,16 +151,22 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
                 theta_to_ordinal_coord(self.radius + self.label_offset, middle_theta, self.center);
 
             // ensure label's doesn't fall in the circle
-            let label_size = backend.estimate_text_size(&label.to_string(), &self.label_style)?;
+            let label_size =
+                backend.estimate_text_size(&label.to_string(), self.label_style.clone().into())?;
             // if on the left hand side of the pie, offset whole label to the left
             if mid_coord.0 <= self.center.0 {
                 mid_coord.0 -= label_size.0 as i32;
             }
             // put label
-            backend.draw_text(&label.to_string(), &self.label_style, mid_coord)?;
-            if let Some(percentage_style) = &self.percentage_style {
+            backend.draw_text(
+                &label.to_string(),
+                self.label_style.clone().into(),
+                mid_coord,
+            )?;
+            if let Some(percentage_style) = self.percentage_style.clone() {
                 let perc_label = format!("{:.1}%", (ratio * 100.0));
-                let label_size = backend.estimate_text_size(&perc_label, percentage_style)?;
+                let label_size =
+                    backend.estimate_text_size(&perc_label, percentage_style.into())?;
                 let text_x_mid = (label_size.0 as f64 / 2.0).round() as i32;
                 let text_y_mid = (label_size.1 as f64 / 2.0).round() as i32;
                 let perc_coord = theta_to_ordinal_coord(
@@ -176,7 +182,7 @@ impl<'a, DB: DrawingBackend, Label: Display> Drawable<DB> for Pie<'a, (i32, i32)
         // they have to go on top of the already drawn wedges, so require a new iteration.
         for (label, coord) in perc_labels {
             let style = self.percentage_style.as_ref().unwrap();
-            backend.draw_text(&label, style, coord)?;
+            backend.draw_text(&label, style.clone().into(), coord)?;
         }
         Ok(())
     }

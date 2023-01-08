@@ -1,23 +1,12 @@
-use super::{FontData, FontDataInternal};
-use crate::style::text_anchor::Pos;
-use crate::style::{Color, TextStyle};
-
 use std::convert::From;
 
-pub use plotters_backend::{FontFamily, FontStyle, FontTransform};
-
-/// The error type for the font implementation
-pub type FontError = <FontDataInternal as FontData>::ErrorType;
-
-/// The type we used to represent a result of any font operations
-pub type FontResult<T> = Result<T, FontError>;
+pub use crate::{FontFamily, FontStyle, FontTransform};
 
 /// Describes a font
 #[derive(Clone)]
 pub struct FontDesc<'a> {
     size: f64,
     family: FontFamily<'a>,
-    data: FontResult<FontDataInternal>,
     transform: FontTransform,
     style: FontStyle,
 }
@@ -33,7 +22,6 @@ impl<'a> FontDesc<'a> {
         Self {
             size,
             family,
-            data: FontDataInternal::new(family, style),
             transform: FontTransform::None,
             style,
         }
@@ -47,7 +35,6 @@ impl<'a> FontDesc<'a> {
         Self {
             size,
             family: self.family,
-            data: self.data.clone(),
             transform: self.transform.clone(),
             style: self.style,
         }
@@ -61,7 +48,6 @@ impl<'a> FontDesc<'a> {
         Self {
             size: self.size,
             family: self.family,
-            data: self.data.clone(),
             transform: self.transform.clone(),
             style,
         }
@@ -75,7 +61,6 @@ impl<'a> FontDesc<'a> {
         Self {
             size: self.size,
             family: self.family,
-            data: self.data.clone(),
             transform: trans,
             style: self.style,
         }
@@ -86,39 +71,8 @@ impl<'a> FontDesc<'a> {
         self.transform.clone()
     }
 
-    /** Returns a new text style object with the specified `color`.
-
-    # Example
-
-    ```
-    use plotters::prelude::*;
-    let text_style = ("sans-serif", 20).into_font().color(&RED);
-    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
-    ```
-
-    The result is a text label colorized accordingly:
-
-    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
-
-    # See also
-
-    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
-
-    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
-
-    */
-    pub fn color<C: Color>(&self, color: &C) -> TextStyle<'a> {
-        TextStyle {
-            font: self.clone(),
-            color: color.to_backend_color(),
-            pos: Pos::default(),
-        }
-    }
-
     /// Returns the font family
-    pub fn get_family(&self) -> FontFamily {
+    pub fn get_family(&self) -> FontFamily<'a> {
         self.family
     }
 
@@ -135,39 +89,6 @@ impl<'a> FontDesc<'a> {
     /// Get the size of font
     pub fn get_size(&self) -> f64 {
         self.size
-    }
-
-    /// Get the size of the text if rendered in this font
-    ///
-    /// For a TTF type, zero point of the layout box is the left most baseline char of the string
-    /// Thus the upper bound of the box is most likely be negative
-    pub fn layout_box(&self, text: &str) -> FontResult<((i32, i32), (i32, i32))> {
-        match &self.data {
-            Ok(ref font) => font.estimate_layout(self.size, text),
-            Err(e) => Err(e.clone()),
-        }
-    }
-
-    /// Get the size of the text if rendered in this font.
-    /// This is similar to `layout_box` function, but it apply the font transformation
-    /// and estimate the overall size of the font
-    pub fn box_size(&self, text: &str) -> FontResult<(u32, u32)> {
-        let ((min_x, min_y), (max_x, max_y)) = self.layout_box(text)?;
-        let (w, h) = self.get_transform().transform(max_x - min_x, max_y - min_y);
-        Ok((w.unsigned_abs(), h.unsigned_abs()))
-    }
-
-    /// Actually draws a font with a drawing function
-    pub fn draw<E, DrawFunc: FnMut(i32, i32, f32) -> Result<(), E>>(
-        &self,
-        text: &str,
-        (x, y): (i32, i32),
-        draw: DrawFunc,
-    ) -> FontResult<Result<(), E>> {
-        match &self.data {
-            Ok(ref font) => font.draw((x, y), self.size, text, draw),
-            Err(e) => Err(e.clone()),
-        }
     }
 }
 

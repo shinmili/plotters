@@ -1,4 +1,6 @@
-use super::{FontData, FontFamily, FontStyle, LayoutBox};
+use std::error::Error;
+
+use super::{FontBackend, FontData, FontDesc, LayoutBox};
 
 #[derive(Debug, Clone)]
 pub struct FontError;
@@ -12,17 +14,24 @@ impl std::fmt::Display for FontError {
 
 impl std::error::Error for FontError {}
 
-#[derive(Clone)]
-pub struct FontDataInternal(String, String);
+pub struct NaiveFontBackend;
 
-impl FontData for FontDataInternal {
-    type ErrorType = FontError;
-    fn new(family: FontFamily, style: FontStyle) -> Result<Self, FontError> {
-        Ok(FontDataInternal(
-            family.as_str().into(),
-            style.as_str().into(),
+impl FontBackend for NaiveFontBackend {
+    type Font = NaiveFontData;
+
+    fn load_font(&self, desc: &FontDesc) -> Result<Self::Font, Box<dyn Error + Send + Sync>> {
+        Ok(NaiveFontData(
+            desc.get_family().as_str().into(),
+            desc.get_style().as_str().into(),
         ))
     }
+}
+
+#[derive(Clone)]
+pub struct NaiveFontData(String, String);
+
+impl FontData for NaiveFontData {
+    type ErrorType = FontError;
 
     /// Note: This is only a crude estimatation, since for some backend such as SVG, we have no way to
     /// know the real size of the text anyway. Thus using font-kit is an overkill and doesn't helps

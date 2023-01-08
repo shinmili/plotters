@@ -2,9 +2,11 @@ use super::ChartContext;
 use crate::coord::CoordTranslate;
 use crate::drawing::DrawingAreaErrorKind;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
-use crate::style::{IntoFont, IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
+use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use plotters_backend::{
+    BackendCoord, DefaultFontBackend, DrawingBackend, DrawingErrorKind, IntoFont,
+};
 
 type SeriesAnnoDrawFn<'a, DB> = dyn Fn(BackendCoord) -> DynElement<'a, DB, BackendCoord> + 'a;
 
@@ -227,6 +229,7 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
     */
     pub fn draw(&mut self) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>> {
         let drawing_area = self.target.plotting_area().strip_coord_spec();
+        let font_backend = DefaultFontBackend;
 
         // TODO: Issue #68 Currently generic font family doesn't load on OSX, change this after the issue
         // resolved
@@ -250,15 +253,13 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
                 continue;
             }
 
-            funcs.push(
-                draw_func.unwrap_or(&|p: BackendCoord| EmptyElement::at(p).into_dyn()),
-            );
+            funcs.push(draw_func.unwrap_or(&|p: BackendCoord| EmptyElement::at(p).into_dyn()));
             label_element.push_line(label_text);
         }
 
-        let (mut w, mut h) = label_element.estimate_dimension().map_err(|e| {
-            DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(Box::new(e)))
-        })?;
+        let (mut w, mut h) = label_element
+            .estimate_dimension(&font_backend)
+            .map_err(|e| DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(e)))?;
 
         let margin = self.margin as i32;
 
@@ -285,10 +286,8 @@ impl<'a, 'b, DB: DrawingBackend + 'a, CT: CoordTranslate> SeriesLabelStyle<'a, '
         drawing_area.draw(&label_element)?;
 
         for (((_, y0), (_, y1)), make_elem) in label_element
-            .compute_line_layout()
-            .map_err(|e| {
-                DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(Box::new(e)))
-            })?
+            .compute_line_layout(&font_backend)
+            .map_err(|e| DrawingAreaErrorKind::BackendError(DrawingErrorKind::FontError(e)))?
             .into_iter()
             .zip(funcs.into_iter())
         {

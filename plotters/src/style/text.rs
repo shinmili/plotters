@@ -1,9 +1,11 @@
 use super::color::Color;
-use super::font::{FontDesc, FontError, FontFamily, FontStyle, FontTransform};
 use super::size::{HasDimension, SizeDesc};
 use super::BLACK;
 pub use plotters_backend::text_anchor;
-use plotters_backend::{BackendColor, BackendCoord, BackendTextStyle};
+use plotters_backend::text_anchor::Pos;
+use plotters_backend::{
+    BackendColor, BackendTextStyle, FontDesc, FontFamily, FontStyle, FontTransform,
+};
 
 /// Style of a text
 #[derive(Clone)]
@@ -281,47 +283,79 @@ impl<'a, T: Into<FontDesc<'a>>> From<T> for TextStyle<'a> {
     }
 }
 
-impl<'a> BackendTextStyle for TextStyle<'a> {
-    type FontError = FontError;
-    fn color(&self) -> BackendColor {
-        self.color
+impl<'a> From<TextStyle<'a>> for BackendTextStyle<'a> {
+    fn from(value: TextStyle<'a>) -> BackendTextStyle<'a> {
+        let TextStyle { color, font, pos } = value;
+        BackendTextStyle {
+            color,
+            size: font.get_size(),
+            transform: font.get_transform(),
+            style: font.get_style(),
+            anchor: pos,
+            family: font.get_family(),
+        }
     }
+}
 
-    fn size(&self) -> f64 {
-        self.font.get_size()
-    }
+/// TODO: This definition is temporary.
+pub trait FontDescExt {
+    /** Returns a new text style object with the specified `color`.
 
-    fn transform(&self) -> FontTransform {
-        self.font.get_transform()
-    }
+    # Example
 
-    fn style(&self) -> FontStyle {
-        self.font.get_style()
-    }
+    ```
+    use plotters::prelude::*;
+    let font = ("sans-serif", 20).into_font();
+    let text_style = font.color(&RED);
+    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
+    drawing_area.fill(&WHITE).unwrap();
+    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    ```
 
-    #[allow(clippy::type_complexity)]
-    fn layout_box(&self, text: &str) -> Result<((i32, i32), (i32, i32)), Self::FontError> {
-        self.font.layout_box(text)
-    }
+    The result is a text label colorized accordingly:
 
-    fn anchor(&self) -> text_anchor::Pos {
-        self.pos
-    }
+    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
 
-    fn family(&self) -> FontFamily {
-        self.font.get_family()
-    }
+    # See also
 
-    fn draw<E, DrawFunc: FnMut(i32, i32, BackendColor) -> Result<(), E>>(
-        &self,
-        text: &str,
-        pos: BackendCoord,
-        mut draw: DrawFunc,
-    ) -> Result<Result<(), E>, Self::FontError> {
-        let color = self.color;
-        self.font.draw(text, pos, move |x, y, a| {
-            let mix_color = color.mix(a as f64);
-            draw(x, y, mix_color)
-        })
+    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
+
+    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
+
+    */
+    fn color<C: Color>(&self, color: &C) -> TextStyle;
+}
+
+impl FontDescExt for FontDesc<'_> {
+    /** Returns a new text style object with the specified `color`.
+
+    # Example
+
+    ```
+    use plotters::prelude::*;
+    let font = ("sans-serif", 20).into_font();
+    let text_style = font.color(&RED);
+    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
+    drawing_area.fill(&WHITE).unwrap();
+    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    ```
+
+    The result is a text label colorized accordingly:
+
+    ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@f030ed3/apidoc/font_desc_color.svg)
+
+    # See also
+
+    [`IntoTextStyle::with_color()`](crate::style::IntoTextStyle::with_color)
+
+    [`IntoTextStyle::into_text_style()`](crate::style::IntoTextStyle::into_text_style) for a more succinct example
+
+    */
+    fn color<C: Color>(&self, color: &C) -> TextStyle<'_> {
+        TextStyle {
+            font: self.clone(),
+            color: color.to_backend_color(),
+            pos: Pos::default(),
+        }
     }
 }
