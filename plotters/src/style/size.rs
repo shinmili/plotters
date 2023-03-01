@@ -10,7 +10,7 @@ pub trait HasDimension {
     fn dim(&self) -> (u32, u32);
 }
 
-impl<C: CoordTranslate> HasDimension for DrawingArea<'_, C> {
+impl<C: CoordTranslate> HasDimension for DrawingArea<C> {
     fn dim(&self) -> (u32, u32) {
         self.dim_in_pixel()
     }

@@ -12,24 +12,25 @@ use crate::drawing::DrawingArea;
 /// component like axis, labels untouched and make updates only in the plotting drawing area.
 /// This is very useful for incremental render.
 /// ```rust
-///   use plotters::prelude::*;
-///    let mut buffer = vec![0u8;1024*768*3];
-///    let area = BitMapBackend::with_buffer(&mut buffer[..], (1024, 768))
-///        .into_drawing_area()
-///        .split_evenly((1,2));
-///    let chart = ChartBuilder::on(&area[0])
-///        .caption("Incremental Example", ("sans-serif", 20))
-///        .set_all_label_area_size(30)
-///        .build_cartesian_2d(0..10, 0..10)
-///        .expect("Unable to build ChartContext");
-///    // Draw the first frame at this point
-///    area[0].present().expect("Present");
-///    let state = chart.into_chart_state();
-///    // Let's draw the second frame
-///    let chart = state.restore(&area[0]);
-///    chart.plotting_area().fill(&WHITE).unwrap(); // Clear the previously drawn graph
-///    // At this point, you are able to draw next frame
-///```
+///     use plotters::prelude::*;
+///     let mut buffer = vec![0u8;1024*768*3];
+///     let mut backend = BitMapBackend::with_buffer(&mut buffer[..], (1024, 768));
+///     let area = backend
+///         .to_drawing_area()
+///         .split_evenly((1,2));
+///     let chart = ChartBuilder::on(&area[0])
+///         .caption("Incremental Example", ("sans-serif", 20))
+///         .set_all_label_area_size(30)
+///         .build_cartesian_2d(&mut backend, 0..10, 0..10)
+///         .expect("Unable to build ChartContext");
+///     // Draw the first frame at this point
+///     area[0].present(&mut backend).expect("Present");
+///     let state = chart.into_chart_state();
+///     // Let's draw the second frame
+///     let chart = state.restore(&area[0]);
+///     chart.plotting_area().fill(&mut backend, &WHITE).unwrap(); // Clear the previously drawn graph
+///     // At this point, you are able to draw next frame
+/// ```
 #[derive(Clone)]
 pub struct ChartState<CT: CoordTranslate> {
     drawing_area_pos: (i32, i32),
@@ -37,8 +38,8 @@ pub struct ChartState<CT: CoordTranslate> {
     coord: CT,
 }
 
-impl<'a, 'e, CT: CoordTranslate> From<ChartContext<'a, 'e, CT>> for ChartState<CT> {
-    fn from(chart: ChartContext<'a, 'e, CT>) -> ChartState<CT> {
+impl<'e, CT: CoordTranslate> From<ChartContext<'e, CT>> for ChartState<CT> {
+    fn from(chart: ChartContext<'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
             drawing_area_size: chart.drawing_area.dim_in_pixel(),
@@ -47,7 +48,7 @@ impl<'a, 'e, CT: CoordTranslate> From<ChartContext<'a, 'e, CT>> for ChartState<C
     }
 }
 
-impl<'a, 'e, CT: CoordTranslate> ChartContext<'a, 'e, CT> {
+impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
     /// Convert a chart context into a chart state, by doing so, the chart context is consumed and
     /// a saved chart state is created for later use. This is typically used in incrmental rendering. See documentation of `ChartState` for more detailed example.
     pub fn into_chart_state(self) -> ChartState<CT> {
@@ -67,11 +68,11 @@ impl<'a, 'e, CT: CoordTranslate> ChartContext<'a, 'e, CT> {
     }
 }
 
-impl<'a, 'e, CT> From<&ChartContext<'a, 'e, CT>> for ChartState<CT>
+impl<'e, CT> From<&ChartContext<'e, CT>> for ChartState<CT>
 where
     CT: CoordTranslate + Clone,
 {
-    fn from(chart: &ChartContext<'a, 'e, CT>) -> ChartState<CT> {
+    fn from(chart: &ChartContext<'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
             drawing_area_size: chart.drawing_area.dim_in_pixel(),
@@ -80,7 +81,7 @@ where
     }
 }
 
-impl<'a, 'e, CT: CoordTranslate + Clone> ChartContext<'a, 'e, CT> {
+impl<'e, CT: CoordTranslate + Clone> ChartContext<'e, CT> {
     /// Make the chart context, do not consume the chart context and clone the coordinate spec
     pub fn to_chart_state(&self) -> ChartState<CT> {
         self.into()
@@ -92,7 +93,7 @@ impl<CT: CoordTranslate> ChartState<CT> {
     ///
     /// - `area`: The given drawing area where we want to restore the chart context
     /// - **returns** The newly created chart context
-    pub fn restore<'a, 'e>(self, area: &DrawingArea<'a, Shift>) -> ChartContext<'a, 'e, CT> {
+    pub fn restore<'e>(self, area: &DrawingArea<Shift>) -> ChartContext<'e, CT> {
         let area = area
             .clone()
             .shrink(self.drawing_area_pos, self.drawing_area_size);

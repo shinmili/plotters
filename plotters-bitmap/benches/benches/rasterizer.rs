@@ -83,18 +83,19 @@ fn fill_background(c: &mut Criterion) {
     group.bench_function("rgb", |b| {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
-            let root = BitMapBackend::with_buffer(&mut buffer, (W, H)).into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (W, H));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
         })
     });
 
     group.bench_function("bgrx", |b| {
         let mut buffer = vec![0; (W * H * 4) as usize];
         b.iter(|| {
-            let root = BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H))
-                .unwrap()
-                .into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend =
+                BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
         })
     });
 }
@@ -105,18 +106,19 @@ fn blend_background(c: &mut Criterion) {
     g.bench_function("rgb", |b| {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
-            let root = BitMapBackend::with_buffer(&mut buffer, (W, H)).into_drawing_area();
-            root.fill(&WHITE.mix(0.1)).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (W, H));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE.mix(0.1)).unwrap();
         })
     });
 
     g.bench_function("bgrx", |b| {
         let mut buffer = vec![0; (W * H * 4) as usize];
         b.iter(|| {
-            let root = BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H))
-                .unwrap()
-                .into_drawing_area();
-            root.fill(&WHITE.mix(0.1)).unwrap();
+            let mut backend =
+                BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE.mix(0.1)).unwrap();
         })
     });
 }
@@ -160,18 +162,19 @@ fn fill_background_red(c: &mut Criterion) {
     g.bench_function("rgb", |b| {
         let mut buffer = vec![0; (W * H * 3) as usize];
         b.iter(|| {
-            let root = BitMapBackend::with_buffer(&mut buffer, (W, H)).into_drawing_area();
-            root.fill(&RED).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (W, H));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &RED).unwrap();
         })
     });
 
     g.bench_function("bgrx", |b| {
         let mut buffer = vec![0; (W * H * 4) as usize];
         b.iter(|| {
-            let root = BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H))
-                .unwrap()
-                .into_drawing_area();
-            root.fill(&RED).unwrap();
+            let mut backend =
+                BitMapBackend::<BGRXPixel>::with_buffer_and_format(&mut buffer, (W, H)).unwrap();
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &RED).unwrap();
         })
     });
 }

@@ -13,14 +13,15 @@ use std::ops::Range;
 /// And we are expecting the tick mark denotes weeks, in this way we can make the range
 /// spec grouping by 7 elements.
 /// With the help of the GroupBy decorator, this can be archived quite easily:
-///```rust
-///use plotters::prelude::*;
-///let mut buf = vec![0;1024*768*3];
-///let area = BitMapBackend::with_buffer(buf.as_mut(), (1024, 768)).into_drawing_area();
-///let chart = ChartBuilder::on(&area)
-///    .build_cartesian_2d((0..100).group_by(7), 0..100)
-///    .unwrap();
-///```
+/// ```rust
+/// use plotters::prelude::*;
+/// let mut buf = vec![0;1024*768*3];
+/// let mut backend = BitMapBackend::with_buffer(buf.as_mut(), (1024, 768));
+/// let area = backend.to_drawing_area();
+/// let chart = ChartBuilder::on(&area)
+///     .build_cartesian_2d(&mut backend, (0..100).group_by(7), 0..100)
+///     .unwrap();
+/// ```
 ///
 /// To apply this combinator, call [ToGroupByRange::group_by](trait.ToGroupByRange.html#tymethod.group_by) method on any discrete coordinate spec.
 #[derive(Clone)]

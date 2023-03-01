@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod mocked;
 #[cfg(test)]
-pub use mocked::{check_color, create_mocked_drawing_area, MockedBackend};
+pub use mocked::{check_color, MockedBackend};
 
 /// This is the dummy backend placeholder for the backend that never fails
 #[derive(Debug)]

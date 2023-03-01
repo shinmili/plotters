@@ -9,13 +9,14 @@ Represents a cuboid, a six-faced solid.
 
 ```
 use plotters::prelude::*;
-let drawing_area = SVGBackend::new("cuboid.svg", (300, 200)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("cuboid.svg", (300, 200));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_builder = ChartBuilder::on(&drawing_area);
-let mut chart_context = chart_builder.margin(20).build_cartesian_3d(0.0..3.5, 0.0..2.5, 0.0..1.5).unwrap();
-chart_context.configure_axes().x_labels(4).y_labels(3).z_labels(2).draw().unwrap();
+let mut chart_context = chart_builder.margin(20).build_cartesian_3d(&mut backend, 0.0..3.5, 0.0..2.5, 0.0..1.5).unwrap();
+chart_context.configure_axes().x_labels(4).y_labels(3).z_labels(2).draw(&mut backend).unwrap();
 let cuboid = Cuboid::new([(0.,0.,0.), (3.,2.,1.)], BLUE.mix(0.2), BLUE);
-chart_context.draw_series(std::iter::once(cuboid)).unwrap();
+chart_context.draw_series(&mut backend, std::iter::once(cuboid)).unwrap();
 ```
 
 The result is a semi-transparent cuboid with blue edges:

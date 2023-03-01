@@ -77,16 +77,17 @@ These operations must be done before building error bars.
 ```
 use plotters::prelude::*;
 let data = [(1.0, 3.3), (2., 2.1), (3., 1.5), (4., 1.9), (5., 1.0)];
-let drawing_area = SVGBackend::new("error_bars_vertical.svg", (300, 200)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("error_bars_vertical.svg", (300, 200));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_builder = ChartBuilder::on(&drawing_area);
 chart_builder.margin(10).set_left_and_bottom_label_area_size(20);
-let mut chart_context = chart_builder.build_cartesian_2d(0.0..6.0, 0.0..6.0).unwrap();
-chart_context.configure_mesh().draw().unwrap();
-chart_context.draw_series(data.map(|(x, y)| {
+let mut chart_context = chart_builder.build_cartesian_2d(&mut backend, 0.0..6.0, 0.0..6.0).unwrap();
+chart_context.configure_mesh().draw(&mut backend).unwrap();
+chart_context.draw_series(&mut backend, data.map(|(x, y)| {
     ErrorBar::new_vertical(x, y - 0.4, y, y + 0.3, BLUE.filled(), 10)
 })).unwrap();
-chart_context.draw_series(data.map(|(x, y)| {
+chart_context.draw_series(&mut backend, data.map(|(x, y)| {
     ErrorBar::new_vertical(x, y + 1.0, y + 1.9, y + 2.4, RED, 10)
 })).unwrap();
 ```
@@ -218,11 +219,17 @@ fn test_preserve_stroke_width() {
     let h = ErrorBar::new_horizontal(100, 20, 50, 70, WHITE.filled().stroke_width(5), 3);
 
     use crate::prelude::*;
-    let da = crate::create_mocked_drawing_area(300, 300, |m| {
-        m.check_draw_line(|_, w, _, _| {
+    let mut backend = MockedBackend::new(300, 300);
+    {
+        backend.check_draw_line(|_, w, _, _| {
             assert_eq!(w, 5);
         });
-    });
-    da.draw(&h).expect("Drawing Failure");
-    da.draw(&v).expect("Drawing Failure");
+    }
+    let drawing_area = backend.to_drawing_area();
+    drawing_area
+        .draw(&mut backend, &h)
+        .expect("Drawing Failure");
+    drawing_area
+        .draw(&mut backend, &v)
+        .expect("Drawing Failure");
 }

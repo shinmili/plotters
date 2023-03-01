@@ -260,29 +260,31 @@ mod test {
 
     #[test]
     fn test_draw_v() {
-        let root = MockedBackend::new(1024, 768).into_drawing_area();
+        let mut backend = MockedBackend::new(1024, 768);
+        let root = backend.to_drawing_area();
         let chart = ChartBuilder::on(&root)
-            .build_cartesian_2d(0..2, 0f32..100f32)
+            .build_cartesian_2d(&mut backend, 0..2, 0f32..100f32)
             .unwrap();
 
         let values = Quartiles::new(&[6]);
         assert!(chart
             .plotting_area()
-            .draw(&Boxplot::new_vertical(1, &values))
+            .draw(&mut backend, &Boxplot::new_vertical(1, &values))
             .is_ok());
     }
 
     #[test]
     fn test_draw_h() {
-        let root = MockedBackend::new(1024, 768).into_drawing_area();
+        let mut backend = MockedBackend::new(1024, 768);
+        let root = backend.to_drawing_area();
         let chart = ChartBuilder::on(&root)
-            .build_cartesian_2d(0f32..100f32, 0..2)
+            .build_cartesian_2d(&mut backend, 0f32..100f32, 0..2)
             .unwrap();
 
         let values = Quartiles::new(&[6]);
         assert!(chart
             .plotting_area()
-            .draw(&Boxplot::new_horizontal(1, &values))
+            .draw(&mut backend, &Boxplot::new_horizontal(1, &values))
             .is_ok());
     }
 }

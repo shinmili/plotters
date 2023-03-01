@@ -23,13 +23,14 @@ Presents data in a histogram. Input data can be raw or aggregated.
 ```
 use plotters::prelude::*;
 let data = [1, 1, 2, 2, 1, 3, 3, 2, 2, 1, 1, 2, 2, 2, 3, 3, 1, 2, 3];
-let drawing_area = SVGBackend::new("histogram_vertical.svg", (300, 200)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("histogram_vertical.svg", (300, 200));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_builder = ChartBuilder::on(&drawing_area);
 chart_builder.margin(5).set_left_and_bottom_label_area_size(20);
-let mut chart_context = chart_builder.build_cartesian_2d((1..3).into_segmented(), 0..9).unwrap();
-chart_context.configure_mesh().draw().unwrap();
-chart_context.draw_series(Histogram::vertical(&chart_context).style(BLUE.filled()).margin(10)
+let mut chart_context = chart_builder.build_cartesian_2d(&mut backend, (1..3).into_segmented(), 0..9).unwrap();
+chart_context.configure_mesh().draw(&mut backend).unwrap();
+chart_context.draw_series(&mut backend, Histogram::vertical(&chart_context).style(BLUE.filled()).margin(10)
     .data(data.map(|x| (x, 1)))).unwrap();
 ```
 

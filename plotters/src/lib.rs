@@ -311,19 +311,20 @@ And the following code draws a quadratic function. `src/main.rs`,
 ```rust
 use plotters::prelude::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("plotters-doc-data/0.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut backend = BitMapBackend::new("plotters-doc-data/0.png", (640, 480));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE)?;
     let mut chart = ChartBuilder::on(&root)
         .caption("y=x^2", ("sans-serif", 50).into_font())
         .margin(5)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)?;
+        .build_cartesian_2d(&mut backend, -1f32..1f32, -0.1f32..1f32)?;
 
-    chart.configure_mesh().draw()?;
+    chart.configure_mesh().draw(&mut backend)?;
 
     chart
-        .draw_series(LineSeries::new(
+        .draw_series(&mut backend, LineSeries::new(
             (-50..=50).map(|x| x as f32 / 50.0).map(|x| (x, x * x)),
             &RED,
         ))?
@@ -334,9 +335,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .configure_series_labels()
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
-        .draw()?;
+        .draw(&mut backend)?;
 
-    root.present()?;
+    root.present(&mut backend)?;
 
     Ok(())
 }
@@ -365,18 +366,18 @@ The following code shows a minimal example of this.
 extern crate plotters;
 use plotters::prelude::*;
 
-let figure = evcxr_figure((640, 480), |root| {
-    root.fill(&WHITE);
+let figure = evcxr_figure((640, 480), |backend, root| {
+    root.fill(backend, &WHITE);
     let mut chart = ChartBuilder::on(&root)
         .caption("y=x^2", ("Arial", 50).into_font())
         .margin(5)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)?;
+        .build_cartesian_2d(backend, -1f32..1f32, -0.1f32..1f32)?;
 
-    chart.configure_mesh().draw()?;
+    chart.configure_mesh().draw(backend)?;
 
-    chart.draw_series(LineSeries::new(
+    chart.draw_series(backend, LineSeries::new(
         (-50..=50).map(|x| x as f32 / 50.0).map(|x| (x, x * x)),
         &RED,
     )).unwrap()
@@ -386,7 +387,7 @@ let figure = evcxr_figure((640, 480), |root| {
     chart.configure_series_labels()
         .background_style(&WHITE.mix(0.8))
         .border_style(&BLACK)
-        .draw()?;
+        .draw(backend)?;
     Ok(())
 });
 figure
@@ -483,15 +484,15 @@ Besides that, the drawing area also allows the customized coordinate system, by 
 ```rust
 use plotters::prelude::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root_drawing_area =
-        BitMapBackend::new("plotters-doc-data/2.png", (300, 200)).into_drawing_area();
+    let mut backend = BitMapBackend::new("plotters-doc-data/2.png", (300, 200));
+    let root_drawing_area = backend.to_drawing_area();
     // And we can split the drawing area into 3x3 grid
     let child_drawing_areas = root_drawing_area.split_evenly((3, 3));
     // Then we fill the drawing area with different color
     for (area, color) in child_drawing_areas.into_iter().zip(0..) {
-        area.fill(&Palette99::pick(color))?;
+        area.fill(&mut backend, &Palette99::pick(color))?;
     }
-    root_drawing_area.present()?;
+    root_drawing_area.present(&mut backend)?;
     Ok(())
 }
 ```
@@ -511,15 +512,16 @@ To learn more about the element system, please read the [element module document
 ```rust
 use plotters::prelude::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("plotters-doc-data/3.png", (300, 200)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut backend = BitMapBackend::new("plotters-doc-data/3.png", (300, 200));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE)?;
     // Draw an circle on the drawing area
-    root.draw(&Circle::new(
+    root.draw(&mut backend, &Circle::new(
         (100, 100),
         50,
         Into::<ShapeStyle>::into(&GREEN).filled(),
     ))?;
-    root.present()?;
+    root.present(&mut backend)?;
     Ok(())
 }
 ```
@@ -539,9 +541,10 @@ use plotters::prelude::*;
 use plotters::coord::types::RangedCoordf32;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("plotters-doc-data/4.png", (640, 480)).into_drawing_area();
+    let mut backend = BitMapBackend::new("plotters-doc-data/4.png", (640, 480));
+    let root = backend.to_drawing_area();
 
-    root.fill(&RGBColor(240, 200, 200))?;
+    root.fill(&mut backend, &RGBColor(240, 200, 200))?;
 
     let root = root.apply_coord_spec(Cartesian2d::<RangedCoordf32, RangedCoordf32>::new(
         0f32..1f32,
@@ -559,10 +562,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
     };
 
-    root.draw(&dot_and_label(0.5, 0.6))?;
-    root.draw(&dot_and_label(0.25, 0.33))?;
-    root.draw(&dot_and_label(0.8, 0.8))?;
-    root.present()?;
+    root.draw(&mut backend, &dot_and_label(0.5, 0.6))?;
+    root.draw(&mut backend, &dot_and_label(0.25, 0.33))?;
+    root.draw(&mut backend, &dot_and_label(0.8, 0.8))?;
+    root.present(&mut backend)?;
     Ok(())
 }
 ```
@@ -579,8 +582,9 @@ of the chart context object.
 ```rust
 use plotters::prelude::*;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("plotters-doc-data/5.png", (640, 480)).into_drawing_area();
-    root.fill(&WHITE);
+    let mut backend = BitMapBackend::new("plotters-doc-data/5.png", (640, 480));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE);
     let root = root.margin(10, 10, 10, 10);
     // After this point, we should be able to draw construct a chart context
     let mut chart = ChartBuilder::on(&root)
@@ -590,7 +594,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .x_label_area_size(20)
         .y_label_area_size(40)
         // Finally attach a coordinate on the drawing area and make a chart context
-        .build_cartesian_2d(0f32..10f32, 0f32..10f32)?;
+        .build_cartesian_2d(&mut backend, 0f32..10f32, 0f32..10f32)?;
 
     // Then we can draw a mesh
     chart
@@ -600,25 +604,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .y_labels(5)
         // We can also change the format of the label text
         .y_label_formatter(&|x| format!("{:.3}", x))
-        .draw()?;
+        .draw(&mut backend)?;
 
     // And we can draw something in the drawing area
-    chart.draw_series(LineSeries::new(
-        vec![(0.0, 0.0), (5.0, 5.0), (8.0, 7.0)],
-        &RED,
-    ))?;
+    chart.draw_series(
+        &mut backend,
+        LineSeries::new(
+            vec![(0.0, 0.0), (5.0, 5.0), (8.0, 7.0)],
+            &RED,
+        ))?;
     // Similarly, we can draw point series
-    chart.draw_series(PointSeries::of_element(
-        vec![(0.0, 0.0), (5.0, 5.0), (8.0, 7.0)],
-        5,
-        &RED,
-        &|c, s, st| {
-            return EmptyElement::at(c)    // We want to construct a composed element on-the-fly
-            + Circle::new((0,0),s,st.filled()) // At this point, the new pixel coordinate is established
-            + Text::new(format!("{:?}", c), (10, 0), ("sans-serif", 10).into_font());
-        },
-    ))?;
-    root.present()?;
+    chart.draw_series(
+        &mut backend,
+        PointSeries::of_element(
+            vec![(0.0, 0.0), (5.0, 5.0), (8.0, 7.0)],
+            5,
+            &RED,
+            &|c, s, st| {
+                return EmptyElement::at(c)    // We want to construct a composed element on-the-fly
+                + Circle::new((0,0),s,st.filled()) // At this point, the new pixel coordinate is established
+                + Text::new(format!("{:?}", c), (10, 0), ("sans-serif", 10).into_font());
+            },
+        ))?;
+    root.present(&mut backend)?;
     Ok(())
 }
 ```
@@ -772,7 +780,7 @@ pub mod style;
 pub mod evcxr;
 
 #[cfg(test)]
-pub use crate::drawing::{check_color, create_mocked_drawing_area};
+pub use crate::drawing::check_color;
 
 #[cfg(feature = "palette_ext")]
 pub use palette;

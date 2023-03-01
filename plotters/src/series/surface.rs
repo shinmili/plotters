@@ -61,17 +61,18 @@ Represents functions of two variables.
 
 ```
 use plotters::prelude::*;
-let drawing_area = SVGBackend::new("surface_series_xoz.svg", (640, 480)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("surface_series_xoz.svg", (640, 480));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_context = ChartBuilder::on(&drawing_area)
     .margin(10)
-    .build_cartesian_3d(-3.0..3.0f64, -3.0..3.0f64, -3.0..3.0f64)
+    .build_cartesian_3d(&mut backend, -3.0..3.0f64, -3.0..3.0f64, -3.0..3.0f64)
     .unwrap();
-chart_context.configure_axes().draw().unwrap();
+chart_context.configure_axes().draw(&mut backend).unwrap();
 let axis_title_style = ("sans-serif", 20, &BLACK).into_text_style(&drawing_area);
-chart_context.draw_series([("x", (3., -3., -3.)), ("y", (-3., 3., -3.)), ("z", (-3., -3., 3.))]
-.map(|(label, position)| Text::new(label, position, &axis_title_style))).unwrap();
-chart_context.draw_series(SurfaceSeries::xoz(
+chart_context.draw_series(&mut backend, [("x", (3., -3., -3.)), ("y", (-3., 3., -3.)), ("z", (-3., -3., 3.))]
+    .map(|(label, position)| Text::new(label, position, &axis_title_style))).unwrap();
+chart_context.draw_series(&mut backend, SurfaceSeries::xoz(
     (-30..30).map(|v| v as f64 / 10.0),
     (-30..30).map(|v| v as f64 / 10.0),
     |x:f64,z:f64|(0.7 * (x * x + z * z)).cos()).style(&BLUE.mix(0.5))
@@ -136,17 +137,18 @@ where
 
     ```
     use plotters::prelude::*;
-    let drawing_area = SVGBackend::new("surface_series_style_func.svg", (640, 480)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
+    let mut backend = SVGBackend::new("surface_series_style_func.svg", (640, 480));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
     let mut chart_context = ChartBuilder::on(&drawing_area)
         .margin(10)
-        .build_cartesian_3d(-3.0..3.0f64, -3.0..3.0f64, -3.0..3.0f64)
+        .build_cartesian_3d(&mut backend, -3.0..3.0f64, -3.0..3.0f64, -3.0..3.0f64)
         .unwrap();
-    chart_context.configure_axes().draw().unwrap();
+    chart_context.configure_axes().draw(&mut backend).unwrap();
     let axis_title_style = ("sans-serif", 20, &BLACK).into_text_style(&drawing_area);
-    chart_context.draw_series([("x", (3., -3., -3.)), ("y", (-3., 3., -3.)), ("z", (-3., -3., 3.))]
+    chart_context.draw_series(&mut backend, [("x", (3., -3., -3.)), ("y", (-3., 3., -3.)), ("z", (-3., -3., 3.))]
     .map(|(label, position)| Text::new(label, position, &axis_title_style))).unwrap();
-    chart_context.draw_series(SurfaceSeries::xoz(
+    chart_context.draw_series(&mut backend, SurfaceSeries::xoz(
         (-30..30).map(|v| v as f64 / 10.0),
         (-30..30).map(|v| v as f64 / 10.0),
         |x:f64,z:f64|(0.4 * (x * x + z * z)).cos()).style_func(

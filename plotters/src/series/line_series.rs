@@ -10,16 +10,17 @@ and creates appropriate lines and points with the given style.
 ```
 use plotters::prelude::*;
 let x_values = [0.0f64, 1., 2., 3., 4.];
-let drawing_area = SVGBackend::new("line_series_point_size.svg", (300, 200)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("line_series_point_size.svg", (300, 200));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_builder = ChartBuilder::on(&drawing_area);
 chart_builder.margin(10).set_left_and_bottom_label_area_size(20);
-let mut chart_context = chart_builder.build_cartesian_2d(0.0..4.0, 0.0..3.0).unwrap();
-chart_context.configure_mesh().draw().unwrap();
-chart_context.draw_series(LineSeries::new(x_values.map(|x| (x, 0.3 * x)), BLACK)).unwrap();
-chart_context.draw_series(LineSeries::new(x_values.map(|x| (x, 2.5 - 0.05 * x * x)), RED)
+let mut chart_context = chart_builder.build_cartesian_2d(&mut backend, 0.0..4.0, 0.0..3.0).unwrap();
+chart_context.configure_mesh().draw(&mut backend).unwrap();
+chart_context.draw_series(&mut backend, LineSeries::new(x_values.map(|x| (x, 0.3 * x)), BLACK)).unwrap();
+chart_context.draw_series(&mut backend, LineSeries::new(x_values.map(|x| (x, 2.5 - 0.05 * x * x)), RED)
     .point_size(5)).unwrap();
-chart_context.draw_series(LineSeries::new(x_values.map(|x| (x, 2. - 0.1 * x * x)), BLUE.filled())
+chart_context.draw_series(&mut backend, LineSeries::new(x_values.map(|x| (x, 2. - 0.1 * x * x)), BLUE.filled())
     .point_size(4)).unwrap();
 ```
 
@@ -86,8 +87,9 @@ mod test {
 
     #[test]
     fn test_line_series() {
-        let drawing_area = create_mocked_drawing_area(200, 200, |m| {
-            m.check_draw_path(|c, s, _path| {
+        let mut backend = MockedBackend::new(200, 200);
+        {
+            backend.check_draw_path(|c, s, _path| {
                 assert_eq!(c, RED.to_rgba());
                 assert_eq!(s, 3);
                 // TODO when cleanup the backend coordinate defination, then we uncomment the
@@ -97,21 +99,25 @@ mod test {
                 //}
             });
 
-            m.drop_check(|b| {
+            backend.drop_check(|b| {
                 assert_eq!(b.num_draw_path_call, 1);
                 assert_eq!(b.draw_count, 1);
             });
-        });
+        }
+        let drawing_area = backend.to_drawing_area();
 
         let mut chart = ChartBuilder::on(&drawing_area)
-            .build_cartesian_2d(0..100, 0..100)
+            .build_cartesian_2d(&mut backend, 0..100, 0..100)
             .expect("Build chart error");
 
         chart
-            .draw_series(LineSeries::new(
-                (0..100).map(|x| (x, x)),
-                Into::<ShapeStyle>::into(&RED).stroke_width(3),
-            ))
+            .draw_series(
+                &mut backend,
+                LineSeries::new(
+                    (0..100).map(|x| (x, x)),
+                    Into::<ShapeStyle>::into(&RED).stroke_width(3),
+                ),
+            )
             .expect("Drawing Error");
     }
 }

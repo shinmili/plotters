@@ -1,15 +1,13 @@
-use std::marker::PhantomData;
+use plotters_backend::DrawingBackend;
 
 use super::ChartContext;
+use super::Coord3D;
 use crate::coord::cartesian::Cartesian3d;
 use crate::coord::ranged1d::{BoldPoints, LightPoints, Ranged, ValueFormatter};
+use crate::drawing::DrawingAreaError;
 use crate::style::colors::{BLACK, TRANSPARENT};
 use crate::style::Color;
 use crate::style::{AsRelative, ShapeStyle, SizeDesc, TextStyle};
-
-use super::Coord3D;
-
-use crate::drawing::DrawingAreaError;
 
 /**
 Implements 3D plot axes configurations.
@@ -17,9 +15,9 @@ Implements 3D plot axes configurations.
 The best way to use this struct is by way of the [`configure_axes()`] function.
 See [`ChartContext::configure_axes()`] for more information and examples.
 */
-pub struct Axes3dStyle<'a, 'b, 'e, X: Ranged, Y: Ranged, Z: Ranged> {
+pub struct Axes3dStyle<'b, 'e, X: Ranged, Y: Ranged, Z: Ranged> {
     pub(super) parent_size: (u32, u32),
-    pub(super) target: Option<&'b mut ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>>,
+    pub(super) target: Option<&'b mut ChartContext<'e, Cartesian3d<X, Y, Z>>>,
     pub(super) tick_size: i32,
     pub(super) light_lines_limit: [usize; 3],
     pub(super) n_labels: [usize; 3],
@@ -31,10 +29,9 @@ pub struct Axes3dStyle<'a, 'b, 'e, X: Ranged, Y: Ranged, Z: Ranged> {
     pub(super) format_x: &'b dyn Fn(&X::ValueType) -> String,
     pub(super) format_y: &'b dyn Fn(&Y::ValueType) -> String,
     pub(super) format_z: &'b dyn Fn(&Z::ValueType) -> String,
-    _phantom: PhantomData<&'a (X, Y, Z)>,
 }
 
-impl<'a, 'b, 'e, X, Y, Z, XT, YT, ZT> Axes3dStyle<'a, 'b, 'e, X, Y, Z>
+impl<'b, 'e, X, Y, Z, XT, YT, ZT> Axes3dStyle<'b, 'e, X, Y, Z>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
@@ -209,7 +206,7 @@ where
     This is used internally by Plotters and should probably not be included in user code.
     See [`ChartContext::configure_axes()`] for more information and examples.
     */
-    pub(crate) fn new(chart: &'b mut ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>) -> Self {
+    pub(crate) fn new(chart: &'b mut ChartContext<'e, Cartesian3d<X, Y, Z>>) -> Self {
         let parent_size = chart.drawing_area.dim_in_pixel();
         let base_tick_size = (5u32).percent().max(5).in_pixels(chart.plotting_area());
         let tick_size = base_tick_size;
@@ -226,12 +223,11 @@ where
             format_x: &X::format,
             format_y: &Y::format,
             format_z: &Z::format,
-            _phantom: PhantomData,
             target: Some(chart),
         }
     }
 
-    pub fn draw(&mut self) -> Result<(), DrawingAreaError>
+    pub fn draw<DB: DrawingBackend>(&mut self, backend: &mut DB) -> Result<(), DrawingAreaError>
     where
         XT: Clone,
         YT: Clone,
@@ -259,6 +255,7 @@ where
         );
 
         let panels = chart.draw_axis_panels(
+            backend,
             &kps_bold,
             &kps_light,
             self.axis_panel_style,
@@ -267,7 +264,7 @@ where
         )?;
 
         for i in 0..3 {
-            let axis = chart.draw_axis(i, &panels, self.axis_style)?;
+            let axis = chart.draw_axis(backend, i, &panels, self.axis_style)?;
             let labels: Vec<_> = match i {
                 0 => kps_bold
                     .x_points
@@ -301,6 +298,7 @@ where
                     .collect(),
             };
             chart.draw_axis_ticks(
+                backend,
                 axis,
                 &labels[..],
                 self.tick_size,

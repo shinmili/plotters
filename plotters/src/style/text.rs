@@ -28,10 +28,11 @@ pub trait IntoTextStyle<'a> {
 
     ```
     use plotters::prelude::*;
-    let drawing_area = SVGBackend::new("into_text_style.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
+    let mut backend = SVGBackend::new("into_text_style.svg", (200, 100));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
     let text_style = ("sans-serif", 20, &RED).into_text_style(&drawing_area);
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50)).unwrap();
+    drawing_area.draw_text(&mut backend, "This is a big red label", &text_style, (10, 50)).unwrap();
     ```
 
     The result is a text label styled accordingly:
@@ -47,10 +48,11 @@ pub trait IntoTextStyle<'a> {
 
     ```
     use plotters::prelude::*;
-    let drawing_area = SVGBackend::new("with_color.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
+    let mut backend = SVGBackend::new("with_color.svg", (200, 100));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
     let text_style = ("sans-serif", 20).with_color(RED).into_text_style(&drawing_area);
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50)).unwrap();
+    drawing_area.draw_text(&mut backend, "This is a big red label", &text_style, (10, 50)).unwrap();
     ```
 
     The result is a text label styled accordingly:
@@ -85,13 +87,14 @@ pub trait IntoTextStyle<'a> {
     let anchor_position = (200,100);
     let anchor_left_bottom = Pos::new(HPos::Left, VPos::Bottom);
     let anchor_right_top = Pos::new(HPos::Right, VPos::Top);
-    let drawing_area = SVGBackend::new("with_anchor.svg", (400, 200)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw(&Circle::new(anchor_position, 5, RED.filled()));
+    let mut backend = SVGBackend::new("with_anchor.svg", (400, 200));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
+    drawing_area.draw(&mut backend, &Circle::new(anchor_position, 5, RED.filled()));
     let text_style_right_top = BLACK.with_anchor::<RGBColor>(anchor_right_top).into_text_style(&drawing_area);
-    drawing_area.draw_text("The anchor sits at the right top of this label", &text_style_right_top, anchor_position);
+    drawing_area.draw_text(&mut backend, "The anchor sits at the right top of this label", &text_style_right_top, anchor_position);
     let text_style_left_bottom = BLACK.with_anchor::<RGBColor>(anchor_left_bottom).into_text_style(&drawing_area);
-    drawing_area.draw_text("The anchor sits at the left bottom of this label", &text_style_left_bottom, anchor_position);
+    drawing_area.draw_text(&mut backend, "The anchor sits at the left bottom of this label", &text_style_left_bottom, anchor_position);
     ```
 
     The result has a red pixel at the center and two text labels positioned accordingly:
@@ -307,9 +310,10 @@ pub trait FontDescExt {
     use plotters::prelude::*;
     let font = ("sans-serif", 20).into_font();
     let text_style = font.color(&RED);
-    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    let mut backend = SVGBackend::new("font_desc_color.svg", (200, 100));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
+    drawing_area.draw_text(&mut backend, "This is a big red label", &text_style, (10, 50));
     ```
 
     The result is a text label colorized accordingly:
@@ -335,9 +339,10 @@ impl FontDescExt for FontDesc<'_> {
     use plotters::prelude::*;
     let font = ("sans-serif", 20).into_font();
     let text_style = font.color(&RED);
-    let drawing_area = SVGBackend::new("font_desc_color.svg", (200, 100)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw_text("This is a big red label", &text_style, (10, 50));
+    let mut backend = SVGBackend::new("font_desc_color.svg", (200, 100));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
+    drawing_area.draw_text(&mut backend, "This is a big red label", &text_style, (10, 50));
     ```
 
     The result is a text label colorized accordingly:

@@ -2,16 +2,17 @@ use plotters::prelude::*;
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/matshow.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Matshow Example", ("sans-serif", 80))
         .margin(5)
         .top_x_label_area_size(40)
         .y_label_area_size(40)
-        .build_cartesian_2d(0i32..15i32, 15i32..0i32)?;
+        .build_cartesian_2d(&mut backend, 0i32..15i32, 15i32..0i32)?;
 
     chart
         .configure_mesh()
@@ -23,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .disable_x_mesh()
         .disable_y_mesh()
         .label_style(("sans-serif", 20))
-        .draw()?;
+        .draw(&mut backend)?;
 
     let mut matrix = [[0; 15]; 15];
 
@@ -32,6 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     chart.draw_series(
+        &mut backend,
         matrix
             .iter()
             .zip(0..)
@@ -51,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

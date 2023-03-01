@@ -44,7 +44,7 @@ impl<X, Y, Z> Coord3D<X, Y, Z> {
     }
 }
 
-impl<'a, 'e, X, Y, Z, XT, YT, ZT> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>
+impl<'e, X, Y, Z, XT, YT, ZT> ChartContext<'e, Cartesian3d<X, Y, Z>>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
@@ -59,14 +59,15 @@ where
 
     ```
     use plotters::prelude::*;
-    let drawing_area = SVGBackend::new("configure_axes.svg", (300, 200)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
+    let mut backend = SVGBackend::new("configure_axes.svg", (300, 200));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
     let mut chart_builder = ChartBuilder::on(&drawing_area);
-    let mut chart_context = chart_builder.margin_bottom(30).build_cartesian_3d(0.0..4.0, 0.0..3.0, 0.0..2.7).unwrap();
+    let mut chart_context = chart_builder.margin_bottom(30).build_cartesian_3d(&mut backend, 0.0..4.0, 0.0..3.0, 0.0..2.7).unwrap();
     chart_context.configure_axes().tick_size(8).x_labels(4).y_labels(3).z_labels(2)
         .max_light_lines(5).axis_panel_style(GREEN.mix(0.1)).bold_grid_style(BLUE.mix(0.3))
         .light_grid_style(BLUE.mix(0.2)).label_style(("Calibri", 10))
-        .x_formatter(&|x| format!("x={x}")).draw().unwrap();
+        .x_formatter(&|x| format!("x={x}")).draw(&mut backend).unwrap();
     ```
 
     The resulting chart reflects the customizations specified through `configure_axes()`:
@@ -92,12 +93,12 @@ where
 
     [`ChartContext::configure_mesh()`], a similar function for 2D plots
     */
-    pub fn configure_axes(&mut self) -> Axes3dStyle<'a, '_, 'e, X, Y, Z> {
+    pub fn configure_axes(&mut self) -> Axes3dStyle<'_, 'e, X, Y, Z> {
         Axes3dStyle::new(self)
     }
 }
 
-impl<'a, 'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>> {
+impl<'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'e, Cartesian3d<X, Y, Z>> {
     /// Override the 3D projection matrix. This function allows to override the default projection
     /// matrix.
     /// - `pf`: A function that takes the default projection matrix configuration and returns the

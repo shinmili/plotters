@@ -10,8 +10,9 @@ fn parse_time(t: &str) -> Date<Local> {
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/stock.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = get_data();
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE)?;
 
     let (to_date, from_date) = (
         parse_time(&data[0].0) + Duration::days(1),
@@ -22,18 +23,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .x_label_area_size(40)
         .y_label_area_size(40)
         .caption("MSFT Stock Price", ("sans-serif", 50.0).into_font())
-        .build_cartesian_2d(from_date..to_date, 110f32..135f32)?;
+        .build_cartesian_2d(&mut backend, from_date..to_date, 110f32..135f32)?;
 
-    chart.configure_mesh().light_line_style(&WHITE).draw()?;
+    chart
+        .configure_mesh()
+        .light_line_style(&WHITE)
+        .draw(&mut backend)?;
 
     chart.draw_series(
+        &mut backend,
         data.iter().map(|x| {
             CandleStick::new(parse_time(x.0), x.1, x.2, x.3, x.4, GREEN.filled(), RED, 15)
         }),
     )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend,).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

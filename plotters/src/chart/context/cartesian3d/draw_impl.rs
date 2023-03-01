@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+use plotters_backend::DrawingBackend;
+
 use crate::chart::ChartContext;
 use crate::coord::{
     cartesian::Cartesian3d,
@@ -21,7 +23,7 @@ pub(crate) struct KeyPoints3d<X: Ranged, Y: Ranged, Z: Ranged> {
     pub(crate) z_points: Vec<Z::ValueType>,
 }
 
-impl<'a, 'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'a, 'e, Cartesian3d<X, Y, Z>>
+impl<'e, X: Ranged, Y: Ranged, Z: Ranged> ChartContext<'e, Cartesian3d<X, Y, Z>>
 where
     X::ValueType: Clone,
     Y::ValueType: Clone,
@@ -44,8 +46,9 @@ where
         }
     }
     #[allow(clippy::type_complexity)]
-    pub(crate) fn draw_axis_ticks(
+    pub(crate) fn draw_axis_ticks<DB: DrawingBackend>(
         &mut self,
+        backend: &mut DB,
         axis: [[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2],
         labels: &[(
             [Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3],
@@ -107,13 +110,14 @@ where
             let element = EmptyElement::at(logic_pos)
                 + PathElement::new(vec![(0, 0), dir], style)
                 + Text::new(text.to_string(), (dir.0 * 2, dir.1 * 2), font);
-            self.plotting_area().draw(&element)?;
+            self.plotting_area().draw(backend, &element)?;
         }
         Ok(())
     }
     #[allow(clippy::type_complexity)]
-    pub(crate) fn draw_axis(
+    pub(crate) fn draw_axis<DB: DrawingBackend>(
         &mut self,
+        backend: &mut DB,
         idx: usize,
         panels: &[[[Coord3D<X::ValueType, Y::ValueType, Z::ValueType>; 3]; 2]; 3],
         style: ShapeStyle,
@@ -163,10 +167,13 @@ where
                 .unwrap()
         };
 
-        self.plotting_area().draw(&PathElement::new(
-            vec![Coord3D::build_coord(start), Coord3D::build_coord(end)],
-            style,
-        ))?;
+        self.plotting_area().draw(
+            backend,
+            &PathElement::new(
+                vec![Coord3D::build_coord(start), Coord3D::build_coord(end)],
+                style,
+            ),
+        )?;
 
         Ok([
             [start[0].clone(), start[1].clone(), start[2].clone()],
@@ -175,8 +182,9 @@ where
     }
 
     #[allow(clippy::type_complexity)]
-    pub(crate) fn draw_axis_panels(
+    pub(crate) fn draw_axis_panels<DB: DrawingBackend>(
         &mut self,
+        backend: &mut DB,
         bold_points: &KeyPoints3d<X, Y, Z>,
         light_points: &KeyPoints3d<X, Y, Z>,
         panel_style: ShapeStyle,
@@ -186,6 +194,7 @@ where
     {
         let mut r_iter = (0..3).map(|idx| {
             self.draw_axis_panel(
+                backend,
                 idx,
                 bold_points,
                 light_points,
@@ -201,8 +210,9 @@ where
         ])
     }
     #[allow(clippy::type_complexity)]
-    fn draw_axis_panel(
+    fn draw_axis_panel<DB: DrawingBackend>(
         &mut self,
+        backend: &mut DB,
         idx: usize,
         bold_points: &KeyPoints3d<X, Y, Z>,
         light_points: &KeyPoints3d<X, Y, Z>,
@@ -260,10 +270,10 @@ where
             )
         };
         self.plotting_area()
-            .draw(&Polygon::new(panel.clone(), panel_style))?;
+            .draw(backend, &Polygon::new(panel.clone(), panel_style))?;
         panel.push(panel[0].clone());
         self.plotting_area()
-            .draw(&PathElement::new(panel, bold_grid_style))?;
+            .draw(backend, &PathElement::new(panel, bold_grid_style))?;
 
         for (kps, style) in vec![
             (light_points, light_grid_style),
@@ -282,10 +292,13 @@ where
                     let mut kp_end = end;
                     kp_start[idx] = kp;
                     kp_end[idx] = kp;
-                    self.plotting_area().draw(&PathElement::new(
-                        vec![Coord3D::build_coord(kp_start), Coord3D::build_coord(kp_end)],
-                        style,
-                    ))?;
+                    self.plotting_area().draw(
+                        backend,
+                        &PathElement::new(
+                            vec![Coord3D::build_coord(kp_start), Coord3D::build_coord(kp_end)],
+                            style,
+                        ),
+                    )?;
                 }
             }
         }

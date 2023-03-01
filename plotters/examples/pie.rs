@@ -2,10 +2,11 @@ use plotters::{prelude::*, style::full_palette::ORANGE};
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/pie-chart.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root_area = BitMapBackend::new(&OUT_FILE_NAME, (950, 700)).into_drawing_area();
-    root_area.fill(&WHITE).unwrap();
+    let mut backend = BitMapBackend::new(&OUT_FILE_NAME, (950, 700));
+    let root_area = backend.to_drawing_area();
+    root_area.fill(&mut backend, &WHITE)?;
     let title_style = TextStyle::from(("sans-serif", 30).into_font()).color(&(BLACK));
-    root_area.titled("BEST CIRCLES", title_style).unwrap();
+    root_area.titled(&mut backend, "BEST CIRCLES", title_style)?;
 
     let dims = root_area.dim_in_pixel();
     let center = (dims.0 as i32 / 2, dims.1 as i32 / 2);
@@ -21,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     pie.label_style(label_font.color(&(ORANGE)));
     let percentage_font = ("sans-serif", radius * 0.08).into_font();
     pie.percentages(percentage_font.color(&BLACK));
-    root_area.draw(&pie)?;
+    root_area.draw(&mut backend, &pie)?;
 
     Ok(())
 }

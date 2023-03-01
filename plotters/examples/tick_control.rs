@@ -18,12 +18,14 @@ struct CountryData {
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/tick_control.svg";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = SVGBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut backend = SVGBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE)?;
 
     let (upper, lower) = root.split_vertically(750);
 
     lower.titled(
+        &mut backend,
         "Data Source: https://covid.ourworldindata.org/data/owid-covid-data.json",
         ("sans-serif", 10).into_font().color(&BLACK.mix(0.5)),
     )?;
@@ -34,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set_label_area_size(LabelAreaPosition::Bottom, (4).percent())
         .margin((1).percent())
         .build_cartesian_2d(
+            &mut backend,
             (20u32..5000_0000u32)
                 .log_scale()
                 .with_key_points(vec![50, 100, 1000, 10000, 100000, 1000000, 10000000]),
@@ -46,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .configure_mesh()
         .x_desc("Total Cases")
         .y_desc("New Cases")
-        .draw()?;
+        .draw(&mut backend)?;
 
     let data: std::collections::HashMap<String, CountryData> = serde_json::from_reader(
         BufReader::new(File::open("plotters-doc-data/covid-data.json")?),
@@ -58,16 +61,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let color = Palette99::pick(idx).mix(0.9);
         chart
-            .draw_series(LineSeries::new(
-                data[series].data.iter().map(
-                    |&DailyData {
-                         new_cases,
-                         total_cases,
-                         ..
-                     }| (total_cases as u32, new_cases as u32),
+            .draw_series(
+                &mut backend,
+                LineSeries::new(
+                    data[series].data.iter().map(
+                        |&DailyData {
+                             new_cases,
+                             total_cases,
+                             ..
+                         }| (total_cases as u32, new_cases as u32),
+                    ),
+                    color.stroke_width(3),
                 ),
-                color.stroke_width(3),
-            ))?
+            )?
             .label(series)
             .legend(move |(x, y)| Rectangle::new([(x, y - 5), (x + 10, y + 5)], color.filled()));
     }
@@ -75,10 +81,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     chart
         .configure_series_labels()
         .border_style(&BLACK)
-        .draw()?;
+        .draw(&mut backend)?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

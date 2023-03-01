@@ -3,13 +3,14 @@ use plotters::prelude::*;
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/full_palette.png";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new(OUT_FILE_NAME, (2000, 850)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (2000, 850));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Demonstration of full_palette Colors", ("sans-serif", 50))
-        .build_cartesian_2d(-0.5f32..19f32, -1f32..15f32)?;
+        .build_cartesian_2d(&mut backend, -0.5f32..19f32, -1f32..15f32)?;
 
     use full_palette::*;
     let colors = [
@@ -525,19 +526,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let label_style = TextStyle::from(("monospace", 14.0).into_font()).pos(centered);
 
     for (col, colors) in colors.iter().enumerate() {
-        chart.draw_series(colors.iter().zip(color_names[col].iter()).enumerate().map(
-            |(row, (color, &name))| {
-                let row = row as f32;
-                let col = col as f32;
-                EmptyElement::at((col, row))
-                    + Circle::new((0, 0), 15, color.filled())
-                    + Text::new(name, (0, 16), &label_style)
-            },
-        ))?;
+        chart.draw_series(
+            &mut backend,
+            colors
+                .iter()
+                .zip(color_names[col].iter())
+                .enumerate()
+                .map(|(row, (color, &name))| {
+                    let row = row as f32;
+                    let col = col as f32;
+                    EmptyElement::at((col, row))
+                        + Circle::new((0, 0), 15, color.filled())
+                        + Text::new(name, (0, 16), &label_style)
+                }),
+        )?;
     }
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

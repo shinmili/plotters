@@ -23,8 +23,9 @@ fn read_data<BR: BufRead>(reader: BR) -> HashMap<(String, String), Vec<f64>> {
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/boxplot.svg";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = SVGBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
+    let mut backend = SVGBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
+    root.fill(&mut backend, &WHITE)?;
 
     let root = root.margin(5, 5, 5, 5);
 
@@ -72,6 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .y_label_area_size(80)
         .caption("Ping Boxplot", ("sans-serif", 20))
         .build_cartesian_2d(
+            &mut backend,
             values_range.start - 1.0..values_range.end + 1.0,
             host_list[..].into_segmented(),
         )?;
@@ -82,17 +84,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .y_desc("Host")
         .y_labels(host_list.len())
         .light_line_style(&WHITE)
-        .draw()?;
+        .draw(&mut backend)?;
 
     for (label, (values, style, offset)) in &series {
         chart
-            .draw_series(values.iter().map(|x| {
-                Boxplot::new_horizontal(SegmentValue::CenterOf(&x.0), &x.1)
-                    .width(20)
-                    .whisker_width(0.5)
-                    .style(style)
-                    .offset(*offset)
-            }))?
+            .draw_series(
+                &mut backend,
+                values.iter().map(|x| {
+                    Boxplot::new_horizontal(SegmentValue::CenterOf(&x.0), &x.1)
+                        .width(20)
+                        .whisker_width(0.5)
+                        .style(style)
+                        .offset(*offset)
+                }),
+            )?
             .label(label)
             .legend(move |(x, y)| Rectangle::new([(x, y - 6), (x + 12, y + 6)], style.filled()));
     }
@@ -102,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .background_style(WHITE.filled())
         .border_style(&BLACK.mix(0.5))
         .legend_area_size(22)
-        .draw()?;
+        .draw(&mut backend)?;
 
     let drawing_areas = lower.split_evenly((1, 2));
     let (left, right) = (&drawing_areas[0], &drawing_areas[1]);
@@ -125,30 +130,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .y_label_area_size(40)
         .caption("Vertical Boxplot", ("sans-serif", 20))
         .build_cartesian_2d(
+            &mut backend,
             ab_axis[..].into_segmented(),
             values_range.start - 10.0..values_range.end + 10.0,
         )?;
 
-    chart.configure_mesh().light_line_style(&WHITE).draw()?;
-    chart.draw_series(vec![
-        Boxplot::new_vertical(SegmentValue::CenterOf(&"a"), &quartiles_a),
-        Boxplot::new_vertical(SegmentValue::CenterOf(&"b"), &quartiles_b),
-    ])?;
+    chart
+        .configure_mesh()
+        .light_line_style(&WHITE)
+        .draw(&mut backend)?;
+    chart.draw_series(
+        &mut backend,
+        vec![
+            Boxplot::new_vertical(SegmentValue::CenterOf(&"a"), &quartiles_a),
+            Boxplot::new_vertical(SegmentValue::CenterOf(&"b"), &quartiles_b),
+        ],
+    )?;
 
     let mut chart = ChartBuilder::on(&right)
         .x_label_area_size(40)
         .y_label_area_size(40)
         .caption("Horizontal Boxplot", ("sans-serif", 20))
-        .build_cartesian_2d(-30f32..90f32, 0..3)?;
+        .build_cartesian_2d(&mut backend, -30f32..90f32, 0..3)?;
 
-    chart.configure_mesh().light_line_style(&WHITE).draw()?;
-    chart.draw_series(vec![
-        Boxplot::new_horizontal(1, &quartiles_a),
-        Boxplot::new_horizontal(2, &Quartiles::new(&[30])),
-    ])?;
+    chart
+        .configure_mesh()
+        .light_line_style(&WHITE)
+        .draw(&mut backend)?;
+    chart.draw_series(
+        &mut backend,
+        vec![
+            Boxplot::new_horizontal(1, &quartiles_a),
+            Boxplot::new_horizontal(2, &Quartiles::new(&[30])),
+        ],
+    )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
     Ok(())
 }

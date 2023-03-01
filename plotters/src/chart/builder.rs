@@ -1,9 +1,10 @@
+use plotters_backend::DrawingBackend;
+
 use super::context::ChartContext;
 
 use crate::coord::cartesian::{Cartesian2d, Cartesian3d};
 use crate::coord::ranged1d::AsRangedCoord;
 use crate::coord::Shift;
-
 use crate::drawing::{DrawingArea, DrawingAreaError};
 use crate::style::{IntoTextStyle, SizeDesc, TextStyle};
 
@@ -17,12 +18,13 @@ This is used to configure the label area size with function
 
 ```
 use plotters::prelude::*;
-let drawing_area = SVGBackend::new("label_area_position.svg", (300, 200)).into_drawing_area();
-drawing_area.fill(&WHITE).unwrap();
+let mut backend = SVGBackend::new("label_area_position.svg", (300, 200));
+let drawing_area = backend.to_drawing_area();
+drawing_area.fill(&mut backend, &WHITE).unwrap();
 let mut chart_builder = ChartBuilder::on(&drawing_area);
 chart_builder.set_label_area_size(LabelAreaPosition::Bottom, 60).set_label_area_size(LabelAreaPosition::Left, 35);
-let mut chart_context = chart_builder.build_cartesian_2d(0.0..4.0, 0.0..3.0).unwrap();
-chart_context.configure_mesh().x_desc("Spacious X label area").y_desc("Narrow Y label area").draw().unwrap();
+let mut chart_context = chart_builder.build_cartesian_2d(&mut backend, 0.0..4.0, 0.0..3.0).unwrap();
+chart_context.configure_mesh().x_desc("Spacious X label area").y_desc("Narrow Y label area").draw(&mut backend).unwrap();
 ```
 
 The result is a chart with a spacious X label area and a narrow Y label area:
@@ -53,15 +55,15 @@ allows the high-level charting API being used on the drawing area.
 
 See [`ChartBuilder::on()`] for more information and examples.
 */
-pub struct ChartBuilder<'a, 'b, 'c> {
+pub struct ChartBuilder<'a, 'c> {
     label_area_size: [u32; 4], // [upper, lower, left, right]
     overlap_plotting_area: [bool; 4],
-    root_area: &'a DrawingArea<'b, Shift>,
+    root_area: &'a DrawingArea<Shift>,
     title: Option<(String, TextStyle<'c>)>,
     margin: [u32; 4],
 }
 
-impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
+impl<'a, 'c> ChartBuilder<'a, 'c> {
     /**
     Create a chart builder on the given drawing area
 
@@ -72,20 +74,21 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
 
     ```
     use plotters::prelude::*;
-    let drawing_area = SVGBackend::new("chart_builder_on.svg", (300, 200)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
+    let mut backend = SVGBackend::new("chart_builder_on.svg", (300, 200));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
     let mut chart_builder = ChartBuilder::on(&drawing_area);
     chart_builder.margin(5).set_left_and_bottom_label_area_size(35)
-    .caption("Figure title or caption", ("Calibri", 20, FontStyle::Italic, &RED).into_text_style(&drawing_area));
-    let mut chart_context = chart_builder.build_cartesian_2d(0.0..3.8, 0.0..2.8).unwrap();
-    chart_context.configure_mesh().draw().unwrap();
+        .caption("Figure title or caption", ("Calibri", 20, FontStyle::Italic, &RED).into_text_style(&drawing_area));
+    let mut chart_context = chart_builder.build_cartesian_2d(&mut backend, 0.0..3.8, 0.0..2.8).unwrap();
+    chart_context.configure_mesh().draw(&mut backend).unwrap();
     ```
     The result is a chart with customized margins, label area sizes, and title:
 
     ![](https://cdn.jsdelivr.net/gh/facorread/plotters-doc-data@42ecf52/apidoc/chart_builder_on.svg)
 
     */
-    pub fn on(root: &'a DrawingArea<'b, Shift>) -> Self {
+    pub fn on(root: &'a DrawingArea<Shift>) -> Self {
         Self {
             label_area_size: [0; 4],
             root_area: root,
@@ -283,15 +286,14 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
     #[deprecated(
         note = "`build_ranged` has been renamed to `build_cartesian_2d` and is to be removed in the future."
     )]
-    pub fn build_ranged<'e, X: AsRangedCoord, Y: AsRangedCoord>(
+    pub fn build_ranged<'e, DB: DrawingBackend, X: AsRangedCoord, Y: AsRangedCoord>(
         &mut self,
+        backend: &mut DB,
         x_spec: X,
         y_spec: Y,
-    ) -> Result<
-        ChartContext<'b, 'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaError,
-    > {
-        self.build_cartesian_2d(x_spec, y_spec)
+    ) -> Result<ChartContext<'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>, DrawingAreaError>
+    {
+        self.build_cartesian_2d(backend, x_spec, y_spec)
     }
 
     /**
@@ -304,14 +306,13 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
     See [`ChartBuilder::on()`] and [`ChartContext::configure_mesh()`] for more information and examples.
     */
     #[allow(clippy::type_complexity)]
-    pub fn build_cartesian_2d<'e, X: AsRangedCoord, Y: AsRangedCoord>(
+    pub fn build_cartesian_2d<'e, DB: DrawingBackend, X: AsRangedCoord, Y: AsRangedCoord>(
         &mut self,
+        backend: &mut DB,
         x_spec: X,
         y_spec: Y,
-    ) -> Result<
-        ChartContext<'b, 'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>,
-        DrawingAreaError,
-    > {
+    ) -> Result<ChartContext<'e, Cartesian2d<X::CoordDescType, Y::CoordDescType>>, DrawingAreaError>
+    {
         let mut label_areas = [None, None, None, None];
 
         let mut drawing_area = DrawingArea::clone(self.root_area);
@@ -327,7 +328,7 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
 
         let (title_dx, title_dy) = if let Some((ref title, ref style)) = self.title {
             let (origin_dx, origin_dy) = drawing_area.get_base_pixel();
-            drawing_area = drawing_area.titled(title, style.clone())?;
+            drawing_area = drawing_area.titled(backend, title, style.clone())?;
             let (current_dx, current_dy) = drawing_area.get_base_pixel();
             (current_dx - origin_dx, current_dy - origin_dy)
         } else {
@@ -448,15 +449,22 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
     See [`ChartBuilder::on()`] and [`ChartContext::configure_axes()`] for more information and examples.
     */
     #[allow(clippy::type_complexity)]
-    pub fn build_cartesian_3d<'e, X: AsRangedCoord, Y: AsRangedCoord, Z: AsRangedCoord>(
+    pub fn build_cartesian_3d<'e, DB, X, Y, Z>(
         &mut self,
+        backend: &mut DB,
         x_spec: X,
         y_spec: Y,
         z_spec: Z,
     ) -> Result<
-        ChartContext<'b, 'e, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
+        ChartContext<'e, Cartesian3d<X::CoordDescType, Y::CoordDescType, Z::CoordDescType>>,
         DrawingAreaError,
-    > {
+    >
+    where
+        DB: DrawingBackend,
+        X: AsRangedCoord,
+        Y: AsRangedCoord,
+        Z: AsRangedCoord,
+    {
         let mut drawing_area = DrawingArea::clone(self.root_area);
 
         if *self.margin.iter().max().unwrap_or(&0) > 0 {
@@ -470,7 +478,7 @@ impl<'a, 'b, 'c> ChartBuilder<'a, 'b, 'c> {
 
         let (title_dx, title_dy) = if let Some((ref title, ref style)) = self.title {
             let (origin_dx, origin_dy) = drawing_area.get_base_pixel();
-            drawing_area = drawing_area.titled(title, style.clone())?;
+            drawing_area = drawing_area.titled(backend, title, style.clone())?;
             let (current_dx, current_dy) = drawing_area.get_base_pixel();
             (current_dx - origin_dx, current_dy - origin_dy)
         } else {
@@ -503,7 +511,7 @@ mod test {
     use crate::prelude::*;
     #[test]
     fn test_label_area_size() {
-        let drawing_area = create_mocked_drawing_area(200, 200, |_| {});
+        let drawing_area = MockedBackend::new(200, 200).to_drawing_area();
         let mut chart = ChartBuilder::on(&drawing_area);
 
         chart
@@ -529,7 +537,7 @@ mod test {
 
     #[test]
     fn test_margin_configure() {
-        let drawing_area = create_mocked_drawing_area(200, 200, |_| {});
+        let drawing_area = MockedBackend::new(200, 200).to_drawing_area();
         let mut chart = ChartBuilder::on(&drawing_area);
 
         chart.margin(5);
@@ -550,7 +558,7 @@ mod test {
 
     #[test]
     fn test_caption() {
-        let drawing_area = create_mocked_drawing_area(200, 200, |_| {});
+        let drawing_area = MockedBackend::new(200, 200).to_drawing_area();
         let mut chart = ChartBuilder::on(&drawing_area);
 
         chart.caption("This is a test case", ("serif", 10));

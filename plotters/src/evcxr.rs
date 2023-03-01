@@ -1,5 +1,5 @@
 use crate::coord::Shift;
-use crate::drawing::{DrawingArea, IntoDrawingArea};
+use crate::drawing::{DrawingArea, ToDrawingArea};
 use plotters_svg::SVGBackend;
 
 /// The wrapper for the generated SVG
@@ -30,13 +30,16 @@ impl std::fmt::Debug for SVGWrapper {
 
 /// Start drawing an evcxr figure
 pub fn evcxr_figure<
-    Draw: FnOnce(DrawingArea<'_, Shift>) -> Result<(), Box<dyn std::error::Error>>,
+    Draw: FnOnce(&mut SVGBackend, DrawingArea<Shift>) -> Result<(), Box<dyn std::error::Error>>,
 >(
     size: (u32, u32),
     draw: Draw,
 ) -> SVGWrapper {
     let mut buffer = "".to_string();
-    let root = SVGBackend::with_string(&mut buffer, size).into_drawing_area();
-    draw(root).expect("Drawing failure");
+    {
+        let mut backend = SVGBackend::with_string(&mut buffer, size);
+        let root = backend.to_drawing_area();
+        draw(&mut backend, root).expect("Drawing failure");
+    }
     SVGWrapper(buffer, "".to_string())
 }

@@ -6,9 +6,10 @@ use std::error::Error;
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/slc-temp.png";
 fn main() -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .margin(10)
@@ -20,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .set_label_area_size(LabelAreaPosition::Right, 60)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
         .build_cartesian_2d(
+            &mut backend,
             (Utc.ymd(2010, 1, 1)..Utc.ymd(2018, 12, 1)).monthly(),
             14.0..104.0,
         )?
@@ -35,24 +37,25 @@ fn main() -> Result<(), Box<dyn Error>> {
         .x_labels(30)
         .max_light_lines(4)
         .y_desc("Average Temp (F)")
-        .draw()?;
+        .draw(&mut backend)?;
     chart
         .configure_secondary_axes()
         .y_desc("Average Temp (C)")
-        .draw()?;
-
-    chart.draw_series(LineSeries::new(
-        DATA.iter().map(|(y, m, t)| (Utc.ymd(*y, *m, 1), *t)),
-        &BLUE,
-    ))?;
+        .draw(&mut backend)?;
 
     chart.draw_series(
+        &mut backend,
+        LineSeries::new(DATA.iter().map(|(y, m, t)| (Utc.ymd(*y, *m, 1), *t)), &BLUE),
+    )?;
+
+    chart.draw_series(
+        &mut backend,
         DATA.iter()
             .map(|(y, m, t)| Circle::new((Utc.ymd(*y, *m, 1), *t), 3, BLUE.filled())),
     )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

@@ -99,17 +99,19 @@ where
     /// Bind a existing coordinate spec with a given key points vector. See [WithKeyPoints](struct.WithKeyPoints.html ) for more details.
     /// Example:
     /// ```
-    ///use plotters::prelude::*;
-    ///use plotters_bitmap::BitMapBackend;
-    ///let mut buffer = vec![0;1024*768*3];
-    /// let root = BitMapBackend::with_buffer(&mut buffer, (1024, 768)).into_drawing_area();
+    /// use plotters::prelude::*;
+    /// use plotters_bitmap::BitMapBackend;
+    /// let mut buffer = vec![0;1024*768*3];
+    /// let mut backend = BitMapBackend::with_buffer(&mut buffer, (1024, 768));
+    /// let root = backend.to_drawing_area();
     /// let mut chart = ChartBuilder::on(&root)
     ///    .build_cartesian_2d(
-    ///        (0..100).with_key_points(vec![1,20,50,90]),   // <= This line will make the plot shows 4 tick marks at 1, 20, 50, 90
-    ///        0..10
+    ///         &mut backend,
+    ///         (0..100).with_key_points(vec![1,20,50,90]),   // <= This line will make the plot shows 4 tick marks at 1, 20, 50, 90
+    ///         0..10
     /// ).unwrap();
-    /// chart.configure_mesh().draw().unwrap();
-    ///```
+    /// chart.configure_mesh().draw(&mut backend).unwrap();
+    /// ```
     fn with_key_points(self, points: Vec<Self::Value>) -> WithKeyPoints<Self::CoordDescType> {
         WithKeyPoints {
             inner: self.into(),
@@ -140,17 +142,19 @@ where
     /// Bind a existing coordinate spec with a given key points algorithm. See [WithKeyPointMethod](struct.WithKeyMethod.html ) for more details.
     /// Example:
     /// ```
-    ///use plotters::prelude::*;
-    ///use plotters_bitmap::BitMapBackend;
-    ///let mut buffer = vec![0;1024*768*3];
-    /// let root = BitMapBackend::with_buffer(&mut buffer, (1024, 768)).into_drawing_area();
+    /// use plotters::prelude::*;
+    /// use plotters_bitmap::BitMapBackend;
+    /// let mut buffer = vec![0;1024*768*3];
+    /// let mut backend = BitMapBackend::with_buffer(&mut buffer, (1024, 768));
+    /// let root = backend.to_drawing_area();
     /// let mut chart = ChartBuilder::on(&root)
     ///    .build_cartesian_2d(
-    ///        (0..100).with_key_point_func(|n| (0..100 / n as i32).map(|x| x * 100 / n as i32).collect()),
-    ///        0..10
+    ///         &mut backend,
+    ///         (0..100).with_key_point_func(|n| (0..100 / n as i32).map(|x| x * 100 / n as i32).collect()),
+    ///         0..10
     /// ).unwrap();
-    /// chart.configure_mesh().draw().unwrap();
-    ///```
+    /// chart.configure_mesh().draw(&mut backend).unwrap();
+    /// ```
     fn with_key_point_func<F: Fn(usize) -> Vec<Self::Value> + 'static>(
         self,
         func: F,

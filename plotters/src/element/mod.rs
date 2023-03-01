@@ -53,11 +53,9 @@
     }
 
     fn main() -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new(
-            "plotters-doc-data/element-0.png",
-            (640, 480)
-        ).into_drawing_area();
-        root.draw(&RedBoxedX((200, 200)))?;
+        let mut backend = BitMapBackend::new("plotters-doc-data/element-0.png", (640, 480));
+        let root = backend.to_drawing_area();
+        root.draw(&mut backend, &RedBoxedX((200, 200)))?;
         Ok(())
     }
     ```
@@ -74,15 +72,15 @@
     ```rust
     use plotters::prelude::*;
     fn main() -> Result<(), Box<dyn std::error::Error>> {
-        let root = BitMapBackend::new(
-            "plotters-doc-data/element-1.png",
-            (640, 480)
-        ).into_drawing_area();
+        let mut backend = BitMapBackend::new("plotters-doc-data/element-1.png", (640, 480));
+        let root = backend.to_drawing_area();
         let font:FontDesc = ("sans-serif", 20).into();
-        root.draw(&(EmptyElement::at((200, 200))
+        root.draw(
+            &mut backend,
+            &(EmptyElement::at((200, 200))
                 + Text::new("X", (0, 0), &"sans-serif".into_font().resize(20.0).color(&RED))
                 + Rectangle::new([(0,0), (10, 12)], &RED)
-        ))?;
+            ))?;
         Ok(())
     }
     ```
@@ -121,23 +119,22 @@
         return ret;
     }
     fn main() -> Result<(), Box<dyn std::error::Error>> {
-        let root =
-            BitMapBackend::new("plotters-doc-data/element-3.png", (640, 480))
-            .into_drawing_area();
-        root.fill(&WHITE)?;
+        let mut backend = BitMapBackend::new("plotters-doc-data/element-3.png", (640, 480));
+        let root = backend.to_drawing_area();
+        root.fill(&mut backend, &WHITE)?;
         let mut chart = ChartBuilder::on(&root)
             .x_label_area_size(40)
             .y_label_area_size(40)
             .margin(5)
-            .build_cartesian_2d(0..50, 0..10)?;
+            .build_cartesian_2d(&mut backend, 0..50, 0..10)?;
 
         chart
             .configure_mesh()
             .disable_x_mesh()
             .disable_y_mesh()
-            .draw()?;
+            .draw(&mut backend)?;
 
-        chart.draw_series((0..50).map(|x| {
+        chart.draw_series(&mut backend, (0..50).map(|x| {
             let center = (x, num_of_factor(x));
             // Although the arms of if statement has different types,
             // but they can be placed into a dynamic element wrapper,

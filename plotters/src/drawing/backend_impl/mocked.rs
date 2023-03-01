@@ -1,6 +1,3 @@
-use crate::coord::Shift;
-use crate::drawing::area::IntoDrawingArea;
-use crate::drawing::DrawingArea;
 use crate::style::RGBAColor;
 use plotters_backend::{
     BackendColor, BackendCoord, BackendStyle, BackendTextStyle, DrawingBackend, DrawingErrorKind,
@@ -278,14 +275,4 @@ impl Drop for MockedBackend {
             checker(self);
         }
     }
-}
-
-pub fn create_mocked_drawing_area<F: FnOnce(&mut MockedBackend)>(
-    width: u32,
-    height: u32,
-    setup: F,
-) -> DrawingArea<'static, Shift> {
-    let mut backend = MockedBackend::new(width, height);
-    setup(&mut backend);
-    backend.into_drawing_area()
 }

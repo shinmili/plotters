@@ -143,41 +143,58 @@ impl DrawingBackend for TextDrawingBackend {
     }
 }
 
-fn draw_chart(b: DrawingArea<plotters::coord::Shift>) -> Result<(), Box<dyn Error>> {
-    let mut chart = ChartBuilder::on(&b)
+fn draw_chart<DB: DrawingBackend>(
+    backend: &mut DB,
+    root: &DrawingArea<plotters::coord::Shift>,
+) -> Result<(), Box<dyn Error>> {
+    let mut chart = ChartBuilder::on(&root)
         .margin(1)
         .caption("Sine and Cosine", ("sans-serif", (10).percent_height()))
         .set_label_area_size(LabelAreaPosition::Left, (5i32).percent_width())
         .set_label_area_size(LabelAreaPosition::Bottom, (10i32).percent_height())
-        .build_cartesian_2d(-std::f64::consts::PI..std::f64::consts::PI, -1.2..1.2)?;
+        .build_cartesian_2d(
+            backend,
+            -std::f64::consts::PI..std::f64::consts::PI,
+            -1.2..1.2,
+        )?;
 
     chart
         .configure_mesh()
         .disable_x_mesh()
         .disable_y_mesh()
-        .draw()?;
+        .draw(backend)?;
 
-    chart.draw_series(LineSeries::new(
-        (-314..314).map(|x| x as f64 / 100.0).map(|x| (x, x.sin())),
-        &RED,
-    ))?;
+    chart.draw_series(
+        backend,
+        LineSeries::new(
+            (-314..314).map(|x| x as f64 / 100.0).map(|x| (x, x.sin())),
+            &RED,
+        ),
+    )?;
 
-    chart.draw_series(LineSeries::new(
-        (-314..314).map(|x| x as f64 / 100.0).map(|x| (x, x.cos())),
-        &RED,
-    ))?;
+    chart.draw_series(
+        backend,
+        LineSeries::new(
+            (-314..314).map(|x| x as f64 / 100.0).map(|x| (x, x.cos())),
+            &RED,
+        ),
+    )?;
 
-    b.present()?;
+    root.present(backend)?;
 
     Ok(())
 }
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/console-example.png";
 fn main() -> Result<(), Box<dyn Error>> {
-    draw_chart(TextDrawingBackend(vec![PixelState::Empty; 5000]).into_drawing_area())?;
-    let b = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
-    b.fill(&WHITE)?;
-    draw_chart(b)?;
+    let mut text_backend = TextDrawingBackend(vec![PixelState::Empty; 5000]);
+    let text_drawing_area = text_backend.to_drawing_area();
+    draw_chart(&mut text_backend, &text_drawing_area)?;
+
+    let mut bitmap_backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let bitmap_drawing_area = bitmap_backend.to_drawing_area();
+    bitmap_drawing_area.fill(&mut bitmap_backend, &WHITE)?;
+    draw_chart(&mut bitmap_backend, &bitmap_drawing_area)?;
 
     println!("Image result has been saved to {}", OUT_FILE_NAME);
 

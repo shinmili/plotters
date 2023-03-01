@@ -4,7 +4,9 @@ use crate::drawing::DrawingAreaError;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
 use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
-use plotters_backend::{BackendCoord, DefaultFontBackend, DrawingErrorKind, IntoFont};
+use plotters_backend::{
+    BackendCoord, DefaultFontBackend, DrawingBackend, DrawingErrorKind, IntoFont,
+};
 
 type SeriesAnnoDrawFn<'e> = dyn Fn(BackendCoord) -> DynElement<'e, BackendCoord> + 'e;
 
@@ -120,8 +122,8 @@ impl SeriesLabelPosition {
 }
 
 /// The struct to specify the series label of a target chart context
-pub struct SeriesLabelStyle<'a, 'b, 'e, CT: CoordTranslate> {
-    target: &'b mut ChartContext<'a, 'e, CT>,
+pub struct SeriesLabelStyle<'b, 'e, CT: CoordTranslate> {
+    target: &'b mut ChartContext<'e, CT>,
     position: SeriesLabelPosition,
     legend_area_size: u32,
     border_style: ShapeStyle,
@@ -130,8 +132,8 @@ pub struct SeriesLabelStyle<'a, 'b, 'e, CT: CoordTranslate> {
     margin: u32,
 }
 
-impl<'a, 'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, 'e, CT> {
-    pub(super) fn new(target: &'b mut ChartContext<'a, 'e, CT>) -> Self {
+impl<'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'b, 'e, CT> {
+    pub(super) fn new(target: &'b mut ChartContext<'e, CT>) -> Self {
         Self {
             target,
             position: SeriesLabelPosition::MiddleRight,
@@ -225,7 +227,7 @@ impl<'a, 'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, 'e, CT> {
 
     See [`ChartContext::configure_series_labels()`] for more information and examples.
     */
-    pub fn draw(&mut self) -> Result<(), DrawingAreaError> {
+    pub fn draw<DB: DrawingBackend>(&mut self, backend: &mut DB) -> Result<(), DrawingAreaError> {
         let drawing_area = self.target.plotting_area().strip_coord_spec();
         let font_backend = DefaultFontBackend;
 
@@ -273,15 +275,21 @@ impl<'a, 'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, 'e, CT> {
             label_y + margin,
         ));
 
-        drawing_area.draw(&Rectangle::new(
-            [(label_x, label_y), (label_x + w, label_y + h)],
-            self.background.filled(),
-        ))?;
-        drawing_area.draw(&Rectangle::new(
-            [(label_x, label_y), (label_x + w, label_y + h)],
-            self.border_style,
-        ))?;
-        drawing_area.draw(&label_element)?;
+        drawing_area.draw(
+            backend,
+            &Rectangle::new(
+                [(label_x, label_y), (label_x + w, label_y + h)],
+                self.background.filled(),
+            ),
+        )?;
+        drawing_area.draw(
+            backend,
+            &Rectangle::new(
+                [(label_x, label_y), (label_x + w, label_y + h)],
+                self.border_style,
+            ),
+        )?;
+        drawing_area.draw(backend, &label_element)?;
 
         for (((_, y0), (_, y1)), make_elem) in label_element
             .compute_line_layout(&font_backend)
@@ -290,7 +298,7 @@ impl<'a, 'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'a, 'b, 'e, CT> {
             .zip(funcs.into_iter())
         {
             let legend_element = make_elem((label_x + margin, (y0 + y1) / 2));
-            drawing_area.draw(&legend_element)?;
+            drawing_area.draw(backend, &legend_element)?;
         }
 
         Ok(())

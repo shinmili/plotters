@@ -18,23 +18,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect()
     };
 
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .set_label_area_size(LabelAreaPosition::Left, 60)
         .set_label_area_size(LabelAreaPosition::Bottom, 60)
         .caption("Area Chart Demo", ("sans-serif", 40))
-        .build_cartesian_2d(0..(data.len() - 1), 0.0..1500.0)?;
+        .build_cartesian_2d(&mut backend, 0..(data.len() - 1), 0.0..1500.0)?;
 
     chart
         .configure_mesh()
         .disable_x_mesh()
         .disable_y_mesh()
-        .draw()?;
+        .draw(&mut backend)?;
 
     chart.draw_series(
+        &mut backend,
         AreaSeries::new(
             (0..).zip(data.iter()).map(|(x, y)| (x, *y)),
             0.0,
@@ -44,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
     Ok(())
 }

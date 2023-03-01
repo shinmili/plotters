@@ -19,17 +19,18 @@ fn snowflake_iter(points: &[(f64, f64)]) -> Vec<(f64, f64)> {
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/animation.gif";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::gif(OUT_FILE_NAME, (800, 600), 1_000)?.into_drawing_area();
+    let mut backend = BitMapBackend::gif(OUT_FILE_NAME, (800, 600), 1_000)?;
+    let root = backend.to_drawing_area();
 
     for i in 0..8 {
-        root.fill(&WHITE)?;
+        root.fill(&mut backend, &WHITE)?;
 
         let mut chart = ChartBuilder::on(&root)
             .caption(
                 format!("Koch's Snowflake (n_iter = {})", i),
                 ("sans-serif", 50),
             )
-            .build_cartesian_2d(-2.0..2.0, -1.5..1.5)?;
+            .build_cartesian_2d(&mut backend, -2.0..2.0, -1.5..1.5)?;
 
         let mut snowflake_vertices = {
             let mut current: Vec<(f64, f64)> = vec![
@@ -43,15 +44,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             current
         };
 
-        chart.draw_series(std::iter::once(Polygon::new(
-            snowflake_vertices.clone(),
-            &RED.mix(0.2),
-        )))?;
+        chart.draw_series(
+            &mut backend,
+            std::iter::once(Polygon::new(snowflake_vertices.clone(), &RED.mix(0.2))),
+        )?;
 
         snowflake_vertices.push(snowflake_vertices[0]);
-        chart.draw_series(std::iter::once(PathElement::new(snowflake_vertices, &RED)))?;
+        chart.draw_series(
+            &mut backend,
+            std::iter::once(PathElement::new(snowflake_vertices, &RED)),
+        )?;
 
-        root.present()?;
+        root.present(&mut backend)?;
     }
 
     println!("Result has been saved to {}", OUT_FILE_NAME);

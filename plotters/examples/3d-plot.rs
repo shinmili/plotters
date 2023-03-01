@@ -1,16 +1,17 @@
 use plotters::prelude::*;
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/3d-plot.svg";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let area = SVGBackend::new(OUT_FILE_NAME, (1024, 760)).into_drawing_area();
+    let mut backend = SVGBackend::new(OUT_FILE_NAME, (1024, 760));
+    let area = backend.to_drawing_area();
 
-    area.fill(&WHITE)?;
+    area.fill(&mut backend, &WHITE)?;
 
     let x_axis = (-3.0..3.0).step(0.1);
     let z_axis = (-3.0..3.0).step(0.1);
 
     let mut chart = ChartBuilder::on(&area)
         .caption(format!("3D Plot Test"), ("sans", 20))
-        .build_cartesian_3d(x_axis.clone(), -3.0..3.0, z_axis.clone())?;
+        .build_cartesian_3d(&mut backend, x_axis.clone(), -3.0..3.0, z_axis.clone())?;
 
     chart.with_projection(|mut pb| {
         pb.yaw = 0.5;
@@ -22,10 +23,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .configure_axes()
         .light_grid_style(BLACK.mix(0.15))
         .max_light_lines(3)
-        .draw()?;
+        .draw(&mut backend)?;
 
     chart
         .draw_series(
+            &mut backend,
             SurfaceSeries::xoz(
                 (-30..30).map(|f| f as f64 / 10.0),
                 (-30..30).map(|f| f as f64 / 10.0),
@@ -37,22 +39,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .legend(|(x, y)| Rectangle::new([(x + 5, y - 5), (x + 15, y + 5)], BLUE.mix(0.5).filled()));
 
     chart
-        .draw_series(LineSeries::new(
-            (-100..100)
-                .map(|y| y as f64 / 40.0)
-                .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())),
-            &BLACK,
-        ))?
+        .draw_series(
+            &mut backend,
+            LineSeries::new(
+                (-100..100)
+                    .map(|y| y as f64 / 40.0)
+                    .map(|y| ((y * 10.0).sin(), y, (y * 10.0).cos())),
+                &BLACK,
+            ),
+        )?
         .label("Line")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLACK));
 
     chart
         .configure_series_labels()
         .border_style(&BLACK)
-        .draw()?;
+        .draw(&mut backend)?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    area.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
     Ok(())
 }

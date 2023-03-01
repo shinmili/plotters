@@ -7,20 +7,20 @@ use crate::coord::ranged1d::{BoldPoints, LightPoints, Ranged, ValueFormatter};
 use crate::drawing::DrawingAreaError;
 use crate::style::{AsRelative, Color, IntoTextStyle, RGBColor, ShapeStyle, SizeDesc, TextStyle};
 
-use plotters_backend::{FontDesc, FontFamily, FontStyle};
+use plotters_backend::{DrawingBackend, FontDesc, FontFamily, FontStyle};
 
 /// The style used to describe the mesh and axis for a secondary coordinate system.
-pub struct SecondaryMeshStyle<'a, 'b, 'e, X: Ranged, Y: Ranged> {
-    style: MeshStyle<'a, 'b, 'e, X, Y>,
+pub struct SecondaryMeshStyle<'b, 'e, X: Ranged, Y: Ranged> {
+    style: MeshStyle<'b, 'e, X, Y>,
 }
 
-impl<'a, 'b, 'e, XT, YT, X: Ranged<ValueType = XT>, Y: Ranged<ValueType = YT>>
-    SecondaryMeshStyle<'a, 'b, 'e, X, Y>
+impl<'b, 'e, XT, YT, X: Ranged<ValueType = XT>, Y: Ranged<ValueType = YT>>
+    SecondaryMeshStyle<'b, 'e, X, Y>
 where
     X: ValueFormatter<XT>,
     Y: ValueFormatter<YT>,
 {
-    pub(super) fn new(target: &'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>) -> Self {
+    pub(super) fn new(target: &'b mut ChartContext<'e, Cartesian2d<X, Y>>) -> Self {
         let mut style = target.configure_mesh();
         style.draw_x_mesh = false;
         style.draw_y_mesh = false;
@@ -103,8 +103,8 @@ where
     }
 
     /// Draw the axes for the secondary coordinate system
-    pub fn draw(&mut self) -> Result<(), DrawingAreaError> {
-        self.style.draw()
+    pub fn draw<DB: DrawingBackend>(&mut self, backend: &mut DB) -> Result<(), DrawingAreaError> {
+        self.style.draw(backend)
     }
 
     /// Set the label style for the secondary axis
@@ -139,7 +139,7 @@ where
 }
 
 /// The struct that is used for tracking the configuration of a mesh of any chart
-pub struct MeshStyle<'a, 'b, 'e, X: Ranged, Y: Ranged> {
+pub struct MeshStyle<'b, 'e, X: Ranged, Y: Ranged> {
     pub(super) parent_size: (u32, u32),
     pub(super) draw_x_mesh: bool,
     pub(super) draw_y_mesh: bool,
@@ -161,18 +161,18 @@ pub struct MeshStyle<'a, 'b, 'e, X: Ranged, Y: Ranged> {
     pub(super) y_label_style: Option<TextStyle<'b>>,
     pub(super) format_x: Option<&'b dyn Fn(&X::ValueType) -> String>,
     pub(super) format_y: Option<&'b dyn Fn(&Y::ValueType) -> String>,
-    pub(super) target: Option<&'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>>,
+    pub(super) target: Option<&'b mut ChartContext<'e, Cartesian2d<X, Y>>>,
     pub(super) _phantom_data: PhantomData<(X, Y)>,
     pub(super) x_tick_size: [i32; 2],
     pub(super) y_tick_size: [i32; 2],
 }
 
-impl<'a, 'b, 'e, X, Y, XT, YT> MeshStyle<'a, 'b, 'e, X, Y>
+impl<'b, 'e, X, Y, XT, YT> MeshStyle<'b, 'e, X, Y>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
 {
-    pub(crate) fn new(chart: &'b mut ChartContext<'a, 'e, Cartesian2d<X, Y>>) -> Self {
+    pub(crate) fn new(chart: &'b mut ChartContext<'e, Cartesian2d<X, Y>>) -> Self {
         let base_tick_size = (5u32).percent().max(5).in_pixels(chart.plotting_area());
 
         let mut x_tick_size = [base_tick_size, base_tick_size];
@@ -217,7 +217,7 @@ where
     }
 }
 
-impl<'a, 'b, 'e, X, Y> MeshStyle<'a, 'b, 'e, X, Y>
+impl<'b, 'e, X, Y> MeshStyle<'b, 'e, X, Y>
 where
     X: Ranged,
     Y: Ranged,
@@ -418,7 +418,7 @@ where
     }
 
     /// Draw the configured mesh on the target plot
-    pub fn draw(&mut self) -> Result<(), DrawingAreaError>
+    pub fn draw<DB: DrawingBackend>(&mut self, backend: &mut DB) -> Result<(), DrawingAreaError>
     where
         X: ValueFormatter<<X as Ranged>::ValueType>,
         Y: ValueFormatter<<Y as Ranged>::ValueType>,
@@ -460,6 +460,7 @@ where
             .unwrap_or_else(|| x_label_style.clone());
 
         target.draw_mesh(
+            backend,
             (
                 LightPoints::new(self.n_y_labels, self.n_y_labels * self.y_light_lines_limit),
                 LightPoints::new(self.n_x_labels, self.n_x_labels * self.x_light_lines_limit),
@@ -483,6 +484,7 @@ where
         )?;
 
         target.draw_mesh(
+            backend,
             (BoldPoints(self.n_y_labels), BoldPoints(self.n_x_labels)),
             &bold_style,
             &x_label_style,

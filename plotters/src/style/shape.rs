@@ -26,10 +26,11 @@ impl ShapeStyle {
         stroke_width: 2,
     };
     let filled_style = original_style.filled();
-    let drawing_area = SVGBackend::new("shape_style_filled.svg", (400, 200)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw(&Circle::new((150, 100), 90, original_style));
-    drawing_area.draw(&Circle::new((250, 100), 90, filled_style));
+    let mut backend = SVGBackend::new("shape_style_filled.svg", (400, 200));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
+    drawing_area.draw(&mut backend, &Circle::new((150, 100), 90, original_style));
+    drawing_area.draw(&mut backend, &Circle::new((250, 100), 90, filled_style));
     ```
 
     The result is a figure with two circles, one of them filled:
@@ -57,10 +58,11 @@ impl ShapeStyle {
         stroke_width: 2,
     };
     let new_style = original_style.stroke_width(5);
-    let drawing_area = SVGBackend::new("shape_style_stroke_width.svg", (400, 200)).into_drawing_area();
-    drawing_area.fill(&WHITE).unwrap();
-    drawing_area.draw(&Circle::new((150, 100), 90, original_style));
-    drawing_area.draw(&Circle::new((250, 100), 90, new_style));
+    let mut backend = SVGBackend::new("shape_style_stroke_width.svg", (400, 200));
+    let drawing_area = backend.to_drawing_area();
+    drawing_area.fill(&mut backend, &WHITE).unwrap();
+    drawing_area.draw(&mut backend, &Circle::new((150, 100), 90, original_style));
+    drawing_area.draw(&mut backend, &Circle::new((250, 100), 90, new_style));
     ```
 
     The result is a figure with two circles, one of them thicker than the other:

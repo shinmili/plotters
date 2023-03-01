@@ -19,13 +19,14 @@ fn snowflake_iter(points: &[(f64, f64)]) -> Vec<(f64, f64)> {
 
 const OUT_FILE_NAME: &'static str = "plotters-doc-data/snowflake.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Koch's Snowflake", ("sans-serif", 50))
-        .build_cartesian_2d(-2.0..2.0, -1.5..1.5)?;
+        .build_cartesian_2d(&mut backend, -2.0..2.0, -1.5..1.5)?;
 
     let mut snowflake_vertices = {
         let mut current: Vec<(f64, f64)> = vec![
@@ -39,15 +40,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         current
     };
 
-    chart.draw_series(std::iter::once(Polygon::new(
-        snowflake_vertices.clone(),
-        &RED.mix(0.2),
-    )))?;
+    chart.draw_series(
+        &mut backend,
+        std::iter::once(Polygon::new(snowflake_vertices.clone(), &RED.mix(0.2))),
+    )?;
     snowflake_vertices.push(snowflake_vertices[0]);
-    chart.draw_series(std::iter::once(PathElement::new(snowflake_vertices, &RED)))?;
+    chart.draw_series(
+        &mut backend,
+        std::iter::once(PathElement::new(snowflake_vertices, &RED)),
+    )?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
     Ok(())
 }

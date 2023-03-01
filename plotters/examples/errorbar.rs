@@ -13,31 +13,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = generate_random_data();
     let down_sampled = down_sample(&data[..]);
 
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let mut backend = BitMapBackend::new(OUT_FILE_NAME, (1024, 768));
+    let root = backend.to_drawing_area();
 
-    root.fill(&WHITE)?;
+    root.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Linear Function with Noise", ("sans-serif", 60))
         .margin(10)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
-        .build_cartesian_2d(-10f64..10f64, -10f64..10f64)?;
+        .build_cartesian_2d(&mut backend, -10f64..10f64, -10f64..10f64)?;
 
-    chart.configure_mesh().draw()?;
+    chart.configure_mesh().draw(&mut backend)?;
 
     chart
-        .draw_series(LineSeries::new(data, &GREEN.mix(0.3)))?
+        .draw_series(&mut backend, LineSeries::new(data, &GREEN.mix(0.3)))?
         .label("Raw Data")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &GREEN));
 
-    chart.draw_series(LineSeries::new(
-        down_sampled.iter().map(|(x, _, y, _)| (*x, *y)),
-        &BLUE,
-    ))?;
+    chart.draw_series(
+        &mut backend,
+        LineSeries::new(down_sampled.iter().map(|(x, _, y, _)| (*x, *y)), &BLUE),
+    )?;
 
     chart
         .draw_series(
+            &mut backend,
             down_sampled.iter().map(|(x, yl, ym, yh)| {
                 ErrorBar::new_vertical(*x, *yl, *ym, *yh, BLUE.filled(), 20)
             }),
@@ -48,10 +50,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     chart
         .configure_series_labels()
         .background_style(WHITE.filled())
-        .draw()?;
+        .draw(&mut backend)?;
 
     // To avoid the IO failure being ignored silently, we manually call the present function
-    root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    root.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
 
     Ok(())

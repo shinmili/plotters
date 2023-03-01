@@ -34,16 +34,17 @@ impl ValueFormatter<u32> for CustomizedX {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let area = SVGBackend::new(OUT_FILE_NAME, (1024, 760)).into_drawing_area();
-    area.fill(&WHITE)?;
+    let mut backend = SVGBackend::new(OUT_FILE_NAME, (1024, 760));
+    let area = backend.to_drawing_area();
+    area.fill(&mut backend, &WHITE)?;
 
     let mut chart = ChartBuilder::on(&area)
         .set_all_label_area_size(50)
-        .build_cartesian_2d(CustomizedX(7), 0.0..10.0)?;
+        .build_cartesian_2d(&mut backend, CustomizedX(7), 0.0..10.0)?;
 
-    chart.configure_mesh().draw()?;
+    chart.configure_mesh().draw(&mut backend)?;
 
-    area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    area.present(&mut backend).expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Result has been saved to {}", OUT_FILE_NAME);
     Ok(())
 }

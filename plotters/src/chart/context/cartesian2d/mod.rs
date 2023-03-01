@@ -12,15 +12,12 @@ use crate::drawing::DrawingArea;
 
 mod draw_impl;
 
-impl<'a, 'e, XT, YT, X, Y> ChartContext<'a, 'e, Cartesian2d<X, Y>>
+impl<'e, XT, YT, X, Y> ChartContext<'e, Cartesian2d<X, Y>>
 where
     X: Ranged<ValueType = XT> + ValueFormatter<XT>,
     Y: Ranged<ValueType = YT> + ValueFormatter<YT>,
 {
-    pub(crate) fn is_overlapping_drawing_area(
-        &self,
-        area: Option<&DrawingArea<'a, Shift>>,
-    ) -> bool {
+    pub(crate) fn is_overlapping_drawing_area(&self, area: Option<&DrawingArea<Shift>>) -> bool {
         if let Some(area) = area {
             let (x0, y0) = area.get_base_pixel();
             let (w, h) = area.dim_in_pixel();
@@ -40,12 +37,12 @@ where
 
     /// Initialize a mesh configuration object and mesh drawing can be finalized by calling
     /// the function `MeshStyle::draw`.
-    pub fn configure_mesh(&mut self) -> MeshStyle<'a, '_, 'e, X, Y> {
+    pub fn configure_mesh(&mut self) -> MeshStyle<'_, 'e, X, Y> {
         MeshStyle::new(self)
     }
 }
 
-impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
+impl<'e, X: Ranged, Y: Ranged> ChartContext<'e, Cartesian2d<X, Y>> {
     /// Get the range of X axis
     pub fn x_range(&self) -> Range<X::ValueType> {
         self.drawing_area.get_x_range()
@@ -63,7 +60,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
     }
 }
 
-impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
+impl<'e, X: Ranged, Y: Ranged> ChartContext<'e, Cartesian2d<X, Y>> {
     /// Convert this chart context into a dual axis chart context and attach a second coordinate spec
     /// on the chart context. For more detailed information, see documentation for [struct DualCoordChartContext](struct.DualCoordChartContext.html)
     ///
@@ -76,7 +73,6 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
         x_coord: SX,
         y_coord: SY,
     ) -> DualCoordChartContext<
-        'a,
         'e,
         Cartesian2d<X, Y>,
         Cartesian2d<SX::CoordDescType, SY::CoordDescType>,

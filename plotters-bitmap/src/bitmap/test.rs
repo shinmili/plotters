@@ -7,13 +7,16 @@ fn test_bitmap_backend() {
     let mut buffer = vec![0; 10 * 10 * 3];
 
     {
-        let back = BitMapBackend::with_buffer(&mut buffer, (10, 10));
+        let mut backend = BitMapBackend::with_buffer(&mut buffer, (10, 10));
 
-        let area = back.into_drawing_area();
-        area.fill(&WHITE).unwrap();
-        area.draw(&PathElement::new(vec![(0, 0), (10, 10)], RED.filled()))
-            .unwrap();
-        area.present().unwrap();
+        let area = backend.to_drawing_area();
+        area.fill(&mut backend, &WHITE).unwrap();
+        area.draw(
+            &mut backend,
+            &PathElement::new(vec![(0, 0), (10, 10)], RED.filled()),
+        )
+        .unwrap();
+        area.present(&mut backend).unwrap();
     }
 
     for i in 0..10 {
@@ -35,12 +38,15 @@ fn test_bitmap_backend_fill_half() {
     let mut buffer = vec![0; 10 * 10 * 3];
 
     {
-        let back = BitMapBackend::with_buffer(&mut buffer, (10, 10));
+        let mut backend = BitMapBackend::with_buffer(&mut buffer, (10, 10));
 
-        let area = back.into_drawing_area();
-        area.draw(&Rectangle::new([(0, 0), (5, 10)], RED.filled()))
-            .unwrap();
-        area.present().unwrap();
+        let area = backend.to_drawing_area();
+        area.draw(
+            &mut backend,
+            &Rectangle::new([(0, 0), (5, 10)], RED.filled()),
+        )
+        .unwrap();
+        area.present(&mut backend).unwrap();
     }
     for x in 0..10 {
         for y in 0..10 {
@@ -56,12 +62,15 @@ fn test_bitmap_backend_fill_half() {
     let mut buffer = vec![0; 10 * 10 * 3];
 
     {
-        let back = BitMapBackend::with_buffer(&mut buffer, (10, 10));
+        let mut backend = BitMapBackend::with_buffer(&mut buffer, (10, 10));
 
-        let area = back.into_drawing_area();
-        area.draw(&Rectangle::new([(0, 0), (10, 5)], RED.filled()))
-            .unwrap();
-        area.present().unwrap();
+        let area = backend.to_drawing_area();
+        area.draw(
+            &mut backend,
+            &Rectangle::new([(0, 0), (10, 5)], RED.filled()),
+        )
+        .unwrap();
+        area.present(&mut backend).unwrap();
     }
     for x in 0..10 {
         for y in 0..10 {
@@ -82,15 +91,15 @@ fn test_bitmap_backend_blend() {
     let mut buffer = vec![255; 10 * 10 * 3];
 
     {
-        let back = BitMapBackend::with_buffer(&mut buffer, (10, 10));
+        let mut backend = BitMapBackend::with_buffer(&mut buffer, (10, 10));
 
-        let area = back.into_drawing_area();
-        area.draw(&Rectangle::new(
-            [(0, 0), (5, 10)],
-            RGBColor(0, 100, 200).mix(0.2).filled(),
-        ))
+        let area = backend.to_drawing_area();
+        area.draw(
+            &mut backend,
+            &Rectangle::new([(0, 0), (5, 10)], RGBColor(0, 100, 200).mix(0.2).filled()),
+        )
         .unwrap();
-        area.present().unwrap();
+        area.present(&mut backend).unwrap();
     }
 
     for x in 0..10 {
@@ -116,8 +125,11 @@ fn test_bitmap_backend_split_and_fill() {
     {
         let mut back = BitMapBackend::with_buffer(&mut buffer, (10, 10));
 
-        for (sub_backend, color) in back.split(&[5]).into_iter().zip([&RED, &GREEN].iter()) {
-            sub_backend.into_drawing_area().fill(*color).unwrap();
+        for (mut sub_backend, color) in back.split(&[5]).into_iter().zip([&RED, &GREEN].iter()) {
+            sub_backend
+                .to_drawing_area()
+                .fill(&mut sub_backend, *color)
+                .unwrap();
         }
     }
 
@@ -420,19 +432,20 @@ mod test {
         let (width, height) = (500, 500);
         let mut buffer = vec![0; (width * height * 3) as usize];
         {
-            let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (width, height));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
 
             let mut chart = ChartBuilder::on(&root)
                 .caption("This is a test", ("sans-serif", 20))
                 .set_all_label_area_size(40)
-                .build_cartesian_2d(0..10, 0..10)
+                .build_cartesian_2d(&mut backend, 0..10, 0..10)
                 .unwrap();
 
             chart
                 .configure_mesh()
                 .set_all_tick_mark_size(tick_size)
-                .draw()
+                .draw(&mut backend)
                 .unwrap();
         }
         checked_save_file(test_name, &buffer, width, height);
@@ -453,16 +466,17 @@ mod test {
         let (width, height) = (1500, 800);
         let mut buffer = vec![0; (width * height * 3) as usize];
         {
-            let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (width, height));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
             let root = root
-                .titled("Image Title", ("sans-serif", 60).into_font())
+                .titled(&mut backend, "Image Title", ("sans-serif", 60).into_font())
                 .unwrap();
 
             let mut chart = ChartBuilder::on(&root)
                 .caption("All anchor point positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
-                .build_cartesian_2d(0..100, 0..50)
+                .build_cartesian_2d(&mut backend, 0..100, 0..50)
                 .unwrap();
 
             chart
@@ -471,7 +485,7 @@ mod test {
                 .disable_y_mesh()
                 .x_desc("X Axis")
                 .y_desc("Y Axis")
-                .draw()
+                .draw(&mut backend)
                 .unwrap();
 
             let ((x1, y1), (x2, y2), (x3, y3)) = ((-30, 30), (0, -30), (30, 30));
@@ -489,12 +503,13 @@ mod test {
                     for (dx2, v_pos) in [VPos::Top, VPos::Center, VPos::Bottom].iter().enumerate() {
                         let x = 150_i32 + (dx1 as i32 * 3 + dx2 as i32) * 150;
                         let y = 120 + dy as i32 * 150;
-                        let draw = |x, y, text| {
-                            root.draw(&Circle::new((x, y), 3, &BLACK.mix(0.5))).unwrap();
+                        let mut draw = |x, y, text| {
+                            root.draw(&mut backend, &Circle::new((x, y), 3, &BLACK.mix(0.5)))
+                                .unwrap();
                             let style = TextStyle::from(("sans-serif", 20).into_font())
                                 .pos(Pos::new(*h_pos, *v_pos))
                                 .transform(trans.clone());
-                            root.draw_text(text, &style, (x, y)).unwrap();
+                            root.draw_text(&mut backend, text, &style, (x, y)).unwrap();
                         };
                         draw(x + x1, y + y1, "dood");
                         draw(x + x2, y + y2, "dog");
@@ -511,26 +526,30 @@ mod test {
         let (width, height) = (500_i32, 500_i32);
         let mut buffer = vec![0; (width * height * 3) as usize];
         {
-            let root = BitMapBackend::with_buffer(&mut buffer, (width as u32, height as u32))
-                .into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend =
+                BitMapBackend::with_buffer(&mut buffer, (width as u32, height as u32));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
 
             let style = TextStyle::from(("sans-serif", 20).into_font())
                 .pos(Pos::new(HPos::Center, VPos::Center));
-            root.draw_text("TOP LEFT", &style, (0, 0)).unwrap();
-            root.draw_text("TOP CENTER", &style, (width / 2, 0))
+            root.draw_text(&mut backend, "TOP LEFT", &style, (0, 0))
                 .unwrap();
-            root.draw_text("TOP RIGHT", &style, (width, 0)).unwrap();
-
-            root.draw_text("MIDDLE LEFT", &style, (0, height / 2))
+            root.draw_text(&mut backend, "TOP CENTER", &style, (width / 2, 0))
                 .unwrap();
-            root.draw_text("MIDDLE RIGHT", &style, (width, height / 2))
+            root.draw_text(&mut backend, "TOP RIGHT", &style, (width, 0))
                 .unwrap();
 
-            root.draw_text("BOTTOM LEFT", &style, (0, height)).unwrap();
-            root.draw_text("BOTTOM CENTER", &style, (width / 2, height))
+            root.draw_text(&mut backend, "MIDDLE LEFT", &style, (0, height / 2))
                 .unwrap();
-            root.draw_text("BOTTOM RIGHT", &style, (width, height))
+            root.draw_text(&mut backend, "MIDDLE RIGHT", &style, (width, height / 2))
+                .unwrap();
+
+            root.draw_text(&mut backend, "BOTTOM LEFT", &style, (0, height))
+                .unwrap();
+            root.draw_text(&mut backend, "BOTTOM CENTER", &style, (width / 2, height))
+                .unwrap();
+            root.draw_text(&mut backend, "BOTTOM RIGHT", &style, (width, height))
                 .unwrap();
         }
         checked_save_file("test_text_clipping", &buffer, width as u32, height as u32);
@@ -541,30 +560,34 @@ mod test {
         let (width, height) = (500, 500);
         let mut buffer = vec![0; (width * height * 3) as usize];
         {
-            let root = BitMapBackend::with_buffer(&mut buffer, (width, height)).into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend = BitMapBackend::with_buffer(&mut buffer, (width, height));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
 
             let mut chart = ChartBuilder::on(&root)
                 .caption("All series label positions", ("sans-serif", 20))
                 .set_all_label_area_size(40)
-                .build_cartesian_2d(0..50, 0..50)
+                .build_cartesian_2d(&mut backend, 0..50, 0..50)
                 .unwrap();
 
             chart
                 .configure_mesh()
                 .disable_x_mesh()
                 .disable_y_mesh()
-                .draw()
+                .draw(&mut backend)
                 .unwrap();
 
             chart
-                .draw_series(std::iter::once(Circle::new((5, 15), 5, &RED)))
+                .draw_series(&mut backend, std::iter::once(Circle::new((5, 15), 5, &RED)))
                 .expect("Drawing error")
                 .label("Series 1")
                 .legend(|(x, y)| Circle::new((x, y), 3, RED.filled()));
 
             chart
-                .draw_series(std::iter::once(Circle::new((5, 15), 10, &BLUE)))
+                .draw_series(
+                    &mut backend,
+                    std::iter::once(Circle::new((5, 15), 10, &BLUE)),
+                )
                 .expect("Drawing error")
                 .label("Series 2")
                 .legend(|(x, y)| Circle::new((x, y), 3, BLUE.filled()));
@@ -587,7 +610,7 @@ mod test {
                     .configure_series_labels()
                     .border_style(&BLACK.mix(0.5))
                     .position(pos)
-                    .draw()
+                    .draw(&mut backend)
                     .expect("Drawing error");
             }
         }
@@ -599,12 +622,13 @@ mod test {
         let (width, height) = (100_i32, 100_i32);
         let mut buffer = vec![0; (width * height * 3) as usize];
         {
-            let root = BitMapBackend::with_buffer(&mut buffer, (width as u32, height as u32))
-                .into_drawing_area();
-            root.fill(&WHITE).unwrap();
+            let mut backend =
+                BitMapBackend::with_buffer(&mut buffer, (width as u32, height as u32));
+            let root = backend.to_drawing_area();
+            root.fill(&mut backend, &WHITE).unwrap();
             for i in -20..20 {
                 let alpha = i as f64 * 0.1;
-                root.draw_pixel((50 + i, 50 + i), &BLACK.mix(alpha))
+                root.draw_pixel(&mut backend, (50 + i, 50 + i), &BLACK.mix(alpha))
                     .unwrap();
             }
         }

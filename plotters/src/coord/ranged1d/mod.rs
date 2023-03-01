@@ -42,10 +42,11 @@ impl Ranged for ZeroToOne {
 use plotters::prelude::*;
 
 let mut buffer = vec![0; 1024 * 768 * 3];
-let root = BitMapBackend::with_buffer(&mut buffer, (1024, 768)).into_drawing_area();
+let mut backend = BitMapBackend::with_buffer(&mut buffer, (1024, 768));
+let root = backend.to_drawing_area();
 
 let chart = ChartBuilder::on(&root)
-    .build_cartesian_2d(ZeroToOne, ZeroToOne)
+    .build_cartesian_2d(&mut backend, ZeroToOne, ZeroToOne)
     .unwrap();
 
   ```

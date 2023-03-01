@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use plotters_backend::FontTransform;
+use plotters_backend::{DrawingBackend, FontTransform};
 
 use crate::chart::ChartContext;
 use crate::coord::{
@@ -15,12 +15,13 @@ use crate::style::{
     ShapeStyle, TextStyle,
 };
 
-impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
+impl<'e, X: Ranged, Y: Ranged> ChartContext<'e, Cartesian2d<X, Y>> {
     /// The actual function that draws the mesh lines.
     /// It also returns the label that suppose to be there.
     #[allow(clippy::type_complexity)]
-    fn draw_mesh_lines<FmtLabel, YH: KeyPointHint, XH: KeyPointHint>(
+    fn draw_mesh_lines<DB: DrawingBackend, FmtLabel, YH: KeyPointHint, XH: KeyPointHint>(
         &mut self,
+        backend: &mut DB,
         (r, c): (YH, XH),
         (x_mesh, y_mesh): (bool, bool),
         mesh_line_style: &ShapeStyle,
@@ -34,6 +35,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
         let xr = self.drawing_area.as_coord_spec().x_spec();
         let yr = self.drawing_area.as_coord_spec().y_spec();
         self.drawing_area.draw_mesh(
+            backend,
             |b, l| {
                 let draw = match l {
                     MeshLine::XMesh((x, _), _, _) => {
@@ -61,9 +63,10 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
         Ok((x_labels, y_labels))
     }
 
-    fn draw_axis(
+    fn draw_axis<DB: DrawingBackend>(
         &self,
-        area: &DrawingArea<'a, Shift>,
+        backend: &mut DB,
+        area: &DrawingArea<Shift>,
         axis_style: Option<&ShapeStyle>,
         orientation: (i16, i16),
         inward_labels: bool,
@@ -119,7 +122,10 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
                 y1 = axis_range.end;
             }
 
-            area.draw(&PathElement::new(vec![(x0, y0), (x1, y1)], *axis_style))?;
+            area.draw(
+                backend,
+                &PathElement::new(vec![(x0, y0), (x1, y1)], *axis_style),
+            )?;
         }
 
         Ok(axis_range)
@@ -128,9 +134,10 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
     // TODO: consider make this function less complicated
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::cognitive_complexity)]
-    fn draw_axis_and_labels(
+    fn draw_axis_and_labels<DB: DrawingBackend>(
         &self,
-        area: Option<&DrawingArea<'a, Shift>>,
+        backend: &mut DB,
+        area: Option<&DrawingArea<Shift>>,
         axis_style: Option<&ShapeStyle>,
         labels: &[(i32, String)],
         label_style: &TextStyle,
@@ -153,7 +160,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
 
         /* Draw the axis and get the axis range so that we can do further label
          * and tick mark drawing */
-        let axis_range = self.draw_axis(area, axis_style, orientation, tick_size < 0)?;
+        let axis_range = self.draw_axis(backend, area, axis_style, orientation, tick_size < 0)?;
 
         /* To make the right label area looks nice, it's a little bit tricky, since for a that is
          * very long, we actually prefer left alignment instead of right alignment.
@@ -164,7 +171,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
             .map(|(_, text)| {
                 if orientation.0 > 0 && orientation.1 == 0 && tick_size >= 0 {
                     self.drawing_area
-                        .estimate_text_size(text, label_style)
+                        .estimate_text_size(backend, text, label_style)
                         .map(|(w, _)| w)
                         .unwrap_or(0) as i32
                 } else {
@@ -248,7 +255,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
             };
 
             let label_style = &label_style.pos(Pos::new(h_pos, v_pos));
-            area.draw_text(t, label_style, (text_x, text_y))?;
+            area.draw_text(backend, t, label_style, (text_x, text_y))?;
 
             if tick_size != 0 {
                 if let Some(style) = axis_style {
@@ -280,7 +287,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
                         }
                     };
                     let line = PathElement::new(vec![(kx0, ky0), (kx1, ky1)], *style);
-                    area.draw(&line)?;
+                    area.draw(backend, &line)?;
                 }
             }
         }
@@ -307,15 +314,16 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
             };
 
             let actual_style = &actual_style.pos(Pos::new(h_pos, v_pos));
-            area.draw_text(text, actual_style, (x0 as i32, y0 as i32))?;
+            area.draw_text(backend, text, actual_style, (x0 as i32, y0 as i32))?;
         }
 
         Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn draw_mesh<FmtLabel, YH: KeyPointHint, XH: KeyPointHint>(
+    pub(crate) fn draw_mesh<DB: DrawingBackend, FmtLabel, YH: KeyPointHint, XH: KeyPointHint>(
         &mut self,
+        backend: &mut DB,
         (r, c): (YH, XH),
         mesh_line_style: &ShapeStyle,
         x_label_style: &TextStyle,
@@ -337,11 +345,17 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
     where
         FmtLabel: FnMut(&X, &Y, &MeshLine<X, Y>) -> Option<String>,
     {
-        let (x_labels, y_labels) =
-            self.draw_mesh_lines((r, c), (x_mesh, y_mesh), mesh_line_style, fmt_label)?;
+        let (x_labels, y_labels) = self.draw_mesh_lines(
+            backend,
+            (r, c),
+            (x_mesh, y_mesh),
+            mesh_line_style,
+            fmt_label,
+        )?;
 
         for idx in 0..2 {
             self.draw_axis_and_labels(
+                backend,
                 self.x_label_area[idx].as_ref(),
                 if x_axis { Some(axis_style) } else { None },
                 &x_labels[..],
@@ -353,6 +367,7 @@ impl<'a, 'e, X: Ranged, Y: Ranged> ChartContext<'a, 'e, Cartesian2d<X, Y>> {
             )?;
 
             self.draw_axis_and_labels(
+                backend,
                 self.y_label_area[idx].as_ref(),
                 if y_axis { Some(axis_style) } else { None },
                 &y_labels[..],

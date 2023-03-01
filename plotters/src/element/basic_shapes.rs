@@ -52,19 +52,22 @@ impl<Coord> Drawable for Pixel<Coord> {
 #[test]
 fn test_pixel_element() {
     use crate::prelude::*;
-    let da = crate::create_mocked_drawing_area(300, 300, |m| {
-        m.check_draw_pixel(|c, (x, y)| {
+    let mut backend = MockedBackend::new(300, 300);
+    {
+        backend.check_draw_pixel(|c, (x, y)| {
             assert_eq!(x, 150);
             assert_eq!(y, 152);
             assert_eq!(c, RED.to_rgba());
         });
 
-        m.drop_check(|b| {
+        backend.drop_check(|b| {
             assert_eq!(b.num_draw_pixel_call, 1);
             assert_eq!(b.draw_count, 1);
         });
-    });
-    da.draw(&Pixel::new((150, 152), &RED))
+    }
+    let drawing_area = backend.to_drawing_area();
+    drawing_area
+        .draw(&mut backend, &Pixel::new((150, 152), &RED))
         .expect("Drawing Failure");
 }
 
@@ -114,22 +117,28 @@ impl<Coord> Drawable for PathElement<Coord> {
 #[test]
 fn test_path_element() {
     use crate::prelude::*;
-    let da = crate::create_mocked_drawing_area(300, 300, |m| {
-        m.check_draw_path(|c, s, path| {
+    let mut backend = MockedBackend::new(300, 300);
+    {
+        backend.check_draw_path(|c, s, path| {
             assert_eq!(c, BLUE.to_rgba());
             assert_eq!(s, 5);
             assert_eq!(path, vec![(100, 101), (105, 107), (150, 157)]);
         });
-        m.drop_check(|b| {
+        backend.drop_check(|b| {
             assert_eq!(b.num_draw_path_call, 1);
             assert_eq!(b.draw_count, 1);
         });
-    });
-    da.draw(&PathElement::new(
-        vec![(100, 101), (105, 107), (150, 157)],
-        Into::<ShapeStyle>::into(&BLUE).stroke_width(5),
-    ))
-    .expect("Drawing Failure");
+    }
+    let drawing_area = backend.to_drawing_area();
+    drawing_area
+        .draw(
+            &mut backend,
+            &PathElement::new(
+                vec![(100, 101), (105, 107), (150, 157)],
+                Into::<ShapeStyle>::into(&BLUE).stroke_width(5),
+            ),
+        )
+        .expect("Drawing Failure");
 }
 
 /// A rectangle element
@@ -197,38 +206,47 @@ impl<Coord> Drawable for Rectangle<Coord> {
 fn test_rect_element() {
     use crate::prelude::*;
     {
-        let da = crate::create_mocked_drawing_area(300, 300, |m| {
-            m.check_draw_rect(|c, s, f, u, d| {
+        let mut backend = MockedBackend::new(300, 300);
+        {
+            backend.check_draw_rect(|c, s, f, u, d| {
                 assert_eq!(c, BLUE.to_rgba());
                 assert_eq!(f, false);
                 assert_eq!(s, 5);
                 assert_eq!([u, d], [(100, 101), (105, 107)]);
             });
-            m.drop_check(|b| {
+            backend.drop_check(|b| {
                 assert_eq!(b.num_draw_rect_call, 1);
                 assert_eq!(b.draw_count, 1);
             });
-        });
-        da.draw(&Rectangle::new(
-            [(100, 101), (105, 107)],
-            Color::stroke_width(&BLUE, 5),
-        ))
-        .expect("Drawing Failure");
+        }
+        let drawing_area = backend.to_drawing_area();
+        drawing_area
+            .draw(
+                &mut backend,
+                &Rectangle::new([(100, 101), (105, 107)], Color::stroke_width(&BLUE, 5)),
+            )
+            .expect("Drawing Failure");
     }
 
     {
-        let da = crate::create_mocked_drawing_area(300, 300, |m| {
-            m.check_draw_rect(|c, _, f, u, d| {
+        let mut backend = MockedBackend::new(300, 300);
+        {
+            backend.check_draw_rect(|c, _, f, u, d| {
                 assert_eq!(c, BLUE.to_rgba());
                 assert_eq!(f, true);
                 assert_eq!([u, d], [(100, 101), (105, 107)]);
             });
-            m.drop_check(|b| {
+            backend.drop_check(|b| {
                 assert_eq!(b.num_draw_rect_call, 1);
                 assert_eq!(b.draw_count, 1);
             });
-        });
-        da.draw(&Rectangle::new([(100, 101), (105, 107)], BLUE.filled()))
+        }
+        let drawing_area = backend.to_drawing_area();
+        drawing_area
+            .draw(
+                &mut backend,
+                &Rectangle::new([(100, 101), (105, 107)], BLUE.filled()),
+            )
             .expect("Drawing Failure");
     }
 }
@@ -282,19 +300,23 @@ impl<Coord, Size: SizeDesc> Drawable for Circle<Coord, Size> {
 #[test]
 fn test_circle_element() {
     use crate::prelude::*;
-    let da = crate::create_mocked_drawing_area(300, 300, |m| {
-        m.check_draw_circle(|c, _, f, s, r| {
+    let mut backend = MockedBackend::new(300, 300);
+    {
+        backend.check_draw_circle(|c, _, f, s, r| {
             assert_eq!(c, BLUE.to_rgba());
             assert_eq!(f, false);
             assert_eq!(s, (150, 151));
             assert_eq!(r, 20);
         });
-        m.drop_check(|b| {
+        backend.drop_check(|b| {
             assert_eq!(b.num_draw_circle_call, 1);
             assert_eq!(b.draw_count, 1);
         });
-    });
-    da.draw(&Circle::new((150, 151), 20, &BLUE))
+    }
+    let drawing_area = backend.to_drawing_area();
+
+    drawing_area
+        .draw(&mut backend, &Circle::new((150, 151), 20, &BLUE))
         .expect("Drawing Failure");
 }
 
@@ -343,18 +365,21 @@ fn test_polygon_element() {
     let points = vec![(100, 100), (50, 500), (300, 400), (200, 300), (550, 200)];
     let expected_points = points.clone();
 
-    let da = crate::create_mocked_drawing_area(800, 800, |m| {
-        m.check_fill_polygon(move |c, p| {
+    let mut backend = MockedBackend::new(800, 800);
+    {
+        backend.check_fill_polygon(move |c, p| {
             assert_eq!(c, BLUE.to_rgba());
             assert_eq!(expected_points.len(), p.len());
             assert_eq!(expected_points, p);
         });
-        m.drop_check(|b| {
+        backend.drop_check(|b| {
             assert_eq!(b.num_fill_polygon_call, 1);
             assert_eq!(b.draw_count, 1);
         });
-    });
+    }
+    let drawing_area = backend.to_drawing_area();
 
-    da.draw(&Polygon::new(points.clone(), &BLUE))
+    drawing_area
+        .draw(&mut backend, &Polygon::new(points.clone(), &BLUE))
         .expect("Drawing Failure");
 }
