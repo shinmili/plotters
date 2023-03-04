@@ -330,3 +330,96 @@ pub trait DrawingBackend {
         Ok(())
     }
 }
+
+impl<'a> DrawingBackend for &'a mut dyn DrawingBackend {
+    fn get_size(&self) -> (u32, u32) {
+        (**self).get_size()
+    }
+
+    fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind> {
+        (**self).ensure_prepared()
+    }
+
+    fn present(&mut self) -> Result<(), DrawingErrorKind> {
+        (**self).present()
+    }
+
+    fn draw_pixel(
+        &mut self,
+        point: BackendCoord,
+        color: BackendColor,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_pixel(point, color)
+    }
+
+    fn draw_line(
+        &mut self,
+        from: BackendCoord,
+        to: BackendCoord,
+        style: BackendStyle,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_line(from, to, style)
+    }
+
+    fn draw_rect(
+        &mut self,
+        upper_left: BackendCoord,
+        bottom_right: BackendCoord,
+        style: BackendStyle,
+        fill: bool,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_rect(upper_left, bottom_right, style, fill)
+    }
+
+    fn draw_path(
+        &mut self,
+        path: &[BackendCoord],
+        style: BackendStyle,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_path(path, style)
+    }
+
+    fn draw_circle(
+        &mut self,
+        center: BackendCoord,
+        radius: u32,
+        style: BackendStyle,
+        fill: bool,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_circle(center, radius, style, fill)
+    }
+
+    fn fill_polygon(
+        &mut self,
+        vert: &[BackendCoord],
+        style: BackendStyle,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).fill_polygon(vert, style)
+    }
+
+    fn draw_text<'b>(
+        &mut self,
+        text: &str,
+        style: BackendTextStyle<'b>,
+        pos: BackendCoord,
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).draw_text(text, style, pos)
+    }
+
+    fn estimate_text_size<'b>(
+        &self,
+        text: &str,
+        style: BackendTextStyle<'b>,
+    ) -> Result<(u32, u32), DrawingErrorKind> {
+        (**self).estimate_text_size(text, style)
+    }
+
+    fn blit_bitmap(
+        &mut self,
+        pos: BackendCoord,
+        (iw, ih): (u32, u32),
+        src: &[u8],
+    ) -> Result<(), DrawingErrorKind> {
+        (**self).blit_bitmap(pos, (iw, ih), src)
+    }
+}

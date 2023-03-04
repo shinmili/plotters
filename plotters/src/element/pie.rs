@@ -94,10 +94,10 @@ impl<'a, Label: Display> Pie<'a, (i32, i32), Label> {
 }
 
 impl<'a, Label: Display> Drawable for Pie<'a, (i32, i32), Label> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         _pos: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let mut offset_theta = self.start_radian;

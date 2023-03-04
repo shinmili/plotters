@@ -213,10 +213,10 @@ impl<'a, 'b, Coord> PointCollection<'a, Coord> for &'a BitMapElement<'b, Coord> 
 }
 
 impl<'a, Coord> Drawable for BitMapElement<'a, Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {

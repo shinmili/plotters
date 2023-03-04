@@ -39,10 +39,10 @@ impl<'b, 'a, Coord: 'a, T: Borrow<str> + 'a> PointCollection<'a, Coord> for &'a 
 }
 
 impl<'a, Coord: 'a, T: Borrow<str>> Drawable for Text<'a, Coord, T> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some(a) = points.next() {
@@ -196,10 +196,10 @@ impl<'b, 'a, Coord: 'a, T: Borrow<str> + 'a> PointCollection<'a, Coord>
 }
 
 impl<'a, Coord: 'a, T: Borrow<str>> Drawable for MultiLineText<'a, Coord, T> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some(a) = points.next() {

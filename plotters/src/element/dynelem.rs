@@ -16,10 +16,10 @@ impl<T: Drawable> DynDrawable for T {
     fn draw_dyn(
         &self,
         points: &mut dyn Iterator<Item = BackendCoord>,
-        backend: &mut dyn DrawingBackend,
+        mut backend: &mut dyn DrawingBackend,
         parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        T::draw(self, points, backend, parent_dim)
+        T::draw(self, points, &mut backend, parent_dim)
     }
 }
 
@@ -41,10 +41,10 @@ impl<'a, 'b: 'a, Coord: Clone> PointCollection<'a, Coord> for &'a DynElement<'b,
 }
 
 impl<'a, Coord: Clone> Drawable for DynElement<'a, Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut pos: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         self.drawable.draw_dyn(&mut pos, backend, parent_dim)

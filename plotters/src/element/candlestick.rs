@@ -70,10 +70,10 @@ impl<'a, X: 'a, Y: PartialOrd + 'a> PointCollection<'a, (X, Y)> for &'a CandleSt
 }
 
 impl<X, Y: PartialOrd> Drawable for CandleStick<X, Y> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let mut points: Vec<_> = points.take(4).collect();

@@ -35,10 +35,10 @@ impl<'a, Coord> PointCollection<'a, Coord> for &'a Pixel<Coord> {
 }
 
 impl<Coord> Drawable for Pixel<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
@@ -102,10 +102,10 @@ impl<'a, Coord> PointCollection<'a, Coord> for &'a PathElement<Coord> {
 }
 
 impl<Coord> Drawable for PathElement<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.collect();
@@ -181,10 +181,10 @@ impl<'a, Coord> PointCollection<'a, Coord> for &'a Rectangle<Coord> {
 }
 
 impl<Coord> Drawable for Rectangle<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         match (points.next(), points.next()) {
@@ -282,10 +282,10 @@ impl<'a, Coord, Size: SizeDesc> PointCollection<'a, Coord> for &'a Circle<Coord,
 }
 
 impl<Coord, Size: SizeDesc> Drawable for Circle<Coord, Size> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x, y)) = points.next() {
@@ -347,10 +347,10 @@ impl<'a, Coord> PointCollection<'a, Coord> for &'a Polygon<Coord> {
 }
 
 impl<Coord> Drawable for Polygon<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         points: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         let points: Vec<_> = points.collect();

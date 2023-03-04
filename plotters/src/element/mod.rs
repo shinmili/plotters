@@ -39,10 +39,10 @@
 
     // How to actually draw this element
     impl Drawable for RedBoxedX {
-        fn draw<I:Iterator<Item = BackendCoord>>(
+        fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
             &self,
             mut pos: I,
-            backend: &mut dyn DrawingBackend,
+            backend: &mut DB,
             _: (u32, u32),
         ) -> Result<(), DrawingErrorKind> {
             let pos = pos.next().unwrap();
@@ -240,10 +240,10 @@ pub trait PointCollection<'a, Coord, CM = BackendCoordOnly> {
 pub trait Drawable<CM: CoordMapper = BackendCoordOnly> {
     /// Actually draws the element. The key points is already translated into the
     /// image coordinate and can be used by DC directly
-    fn draw<I: Iterator<Item = CM::Output>>(
+    fn draw<I: Iterator<Item = CM::Output>, DB: DrawingBackend>(
         &self,
         pos: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind>;
 }

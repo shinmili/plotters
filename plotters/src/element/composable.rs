@@ -76,10 +76,10 @@ impl<'a, Coord> PointCollection<'a, Coord> for &'a EmptyElement<Coord> {
 }
 
 impl<Coord> Drawable for EmptyElement<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         _pos: I,
-        _backend: &mut dyn DrawingBackend,
+        _backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         Ok(())
@@ -110,10 +110,10 @@ where
     for<'a> &'a A: PointCollection<'a, BackendCoord>,
     A: Drawable,
 {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut pos: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x0, y0)) = pos.next() {
@@ -182,10 +182,10 @@ where
     A: Drawable,
     B: Drawable,
 {
-    fn draw<I: Iterator<Item = BackendCoord>>(
+    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
         &self,
         mut pos: I,
-        backend: &mut dyn DrawingBackend,
+        backend: &mut DB,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
         if let Some((x0, y0)) = pos.next() {
