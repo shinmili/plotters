@@ -114,12 +114,12 @@ impl Rect {
 ///     1. Layout specification - Split the parent drawing area into sub-drawing-areas
 ///     2. Coordinate Translation - Allows guest coordinate system attached and used for drawing.
 ///     3. Element based drawing - drawing area provides the environment the element can be drawn onto it.
-pub struct DrawingArea<CT: CoordTranslate> {
+pub struct DrawingArea<CT> {
     rect: Rect,
     coord: CT,
 }
 
-impl<CT: CoordTranslate + Clone> Clone for DrawingArea<CT> {
+impl<CT: Clone> Clone for DrawingArea<CT> {
     fn clone(&self) -> Self {
         Self {
             rect: self.rect.clone(),
@@ -206,7 +206,7 @@ impl<X: Ranged, Y: Ranged> DrawingArea<Cartesian2d<X, Y>> {
     }
 }
 
-impl<CT: CoordTranslate> DrawingArea<CT> {
+impl<CT> DrawingArea<CT> {
     /// Get the left upper conner of this area in the drawing backend
     pub fn get_base_pixel(&self) -> BackendCoord {
         (self.rect.x0, self.rect.y0)
@@ -279,6 +279,33 @@ impl<CT: CoordTranslate> DrawingArea<CT> {
         })
     }
 
+    /// Present all the pending changes to the backend
+    pub fn present<DB: DrawingBackend>(&self, backend: &mut DB) -> Result<(), DrawingAreaError> {
+        self.backend_ops(backend, |b| b.present())
+    }
+
+    /// Estimate the dimension of the text if drawn on this drawing area.
+    /// We can't get this directly from the font, since the drawing backend may or may not
+    /// follows the font configuration. In terminal, the font family will be dropped.
+    /// So the size of the text is drawing area related.
+    ///
+    /// - `backend`: The mutable reference to the backend used to estimate
+    /// - `text`: The text we want to estimate
+    /// - `font`: The font spec in which we want to draw the text
+    /// - **return**: The size of the text if drawn on this area
+    pub fn estimate_text_size<DB: DrawingBackend>(
+        &self,
+        backend: &mut DB,
+        text: &str,
+        style: &TextStyle,
+    ) -> Result<(u32, u32), DrawingAreaError> {
+        self.backend_ops(backend, move |b| {
+            b.estimate_text_size(text, style.clone().into())
+        })
+    }
+}
+
+impl<CT: CoordTranslate> DrawingArea<CT> {
     /// Draw a single pixel
     pub fn draw_pixel<DB: DrawingBackend, ColorType: Color>(
         &self,
@@ -288,11 +315,6 @@ impl<CT: CoordTranslate> DrawingArea<CT> {
     ) -> Result<(), DrawingAreaError> {
         let pos = self.coord.translate(&pos);
         self.backend_ops(backend, |b| b.draw_pixel(pos, color.to_backend_color()))
-    }
-
-    /// Present all the pending changes to the backend
-    pub fn present<DB: DrawingBackend>(&self, backend: &mut DB) -> Result<(), DrawingAreaError> {
-        self.backend_ops(backend, |b| b.present())
     }
 
     /// Draw an high-level element
@@ -319,26 +341,6 @@ impl<CT: CoordTranslate> DrawingArea<CT> {
     /// Map coordinate to the backend coordinate
     pub fn map_coordinate(&self, coord: &CT::From) -> BackendCoord {
         self.coord.translate(coord)
-    }
-
-    /// Estimate the dimension of the text if drawn on this drawing area.
-    /// We can't get this directly from the font, since the drawing backend may or may not
-    /// follows the font configuration. In terminal, the font family will be dropped.
-    /// So the size of the text is drawing area related.
-    ///
-    /// - `backend`: The mutable reference to the backend used to estimate
-    /// - `text`: The text we want to estimate
-    /// - `font`: The font spec in which we want to draw the text
-    /// - **return**: The size of the text if drawn on this area
-    pub fn estimate_text_size<DB: DrawingBackend>(
-        &self,
-        backend: &mut DB,
-        text: &str,
-        style: &TextStyle,
-    ) -> Result<(u32, u32), DrawingAreaError> {
-        self.backend_ops(backend, move |b| {
-            b.estimate_text_size(text, style.clone().into())
-        })
     }
 }
 
@@ -376,7 +378,7 @@ impl DrawingArea<Shift> {
     }
 
     /// Apply a new coord transformation object and returns a new drawing area
-    pub fn apply_coord_spec<CT: CoordTranslate>(&self, coord_spec: CT) -> DrawingArea<CT> {
+    pub fn apply_coord_spec<CT>(&self, coord_spec: CT) -> DrawingArea<CT> {
         DrawingArea {
             rect: self.rect.clone(),
             coord: coord_spec,
@@ -517,7 +519,7 @@ impl DrawingArea<Shift> {
     }
 }
 
-impl<CT: CoordTranslate> DrawingArea<CT> {
+impl<CT> DrawingArea<CT> {
     /// Returns the coordinates by value
     pub fn into_coord_spec(self) -> CT {
         self.coord

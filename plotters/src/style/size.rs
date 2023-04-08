@@ -1,4 +1,3 @@
-use crate::coord::CoordTranslate;
 use crate::drawing::DrawingArea;
 
 /// The trait indicates that the type has a dimensional data.
@@ -10,7 +9,7 @@ pub trait HasDimension {
     fn dim(&self) -> (u32, u32);
 }
 
-impl<C: CoordTranslate> HasDimension for DrawingArea<C> {
+impl<CT> HasDimension for DrawingArea<CT> {
     fn dim(&self) -> (u32, u32) {
         self.dim_in_pixel()
     }

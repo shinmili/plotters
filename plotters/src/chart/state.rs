@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::ChartContext;
-use crate::coord::{CoordTranslate, Shift};
+use crate::coord::Shift;
 use crate::drawing::DrawingArea;
 
 /// A chart context state - This is the data that is needed to reconstruct the chart context
@@ -32,13 +32,13 @@ use crate::drawing::DrawingArea;
 ///     // At this point, you are able to draw next frame
 /// ```
 #[derive(Clone)]
-pub struct ChartState<CT: CoordTranslate> {
+pub struct ChartState<CT> {
     drawing_area_pos: (i32, i32),
     drawing_area_size: (u32, u32),
     coord: CT,
 }
 
-impl<'e, CT: CoordTranslate> From<ChartContext<'e, CT>> for ChartState<CT> {
+impl<'e, CT> From<ChartContext<'e, CT>> for ChartState<CT> {
     fn from(chart: ChartContext<'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
@@ -48,7 +48,7 @@ impl<'e, CT: CoordTranslate> From<ChartContext<'e, CT>> for ChartState<CT> {
     }
 }
 
-impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
+impl<'e, CT> ChartContext<'e, CT> {
     /// Convert a chart context into a chart state, by doing so, the chart context is consumed and
     /// a saved chart state is created for later use. This is typically used in incrmental rendering. See documentation of `ChartState` for more detailed example.
     pub fn into_chart_state(self) -> ChartState<CT> {
@@ -68,10 +68,7 @@ impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
     }
 }
 
-impl<'e, CT> From<&ChartContext<'e, CT>> for ChartState<CT>
-where
-    CT: CoordTranslate + Clone,
-{
+impl<'e, CT: Clone> From<&ChartContext<'e, CT>> for ChartState<CT> {
     fn from(chart: &ChartContext<'e, CT>) -> ChartState<CT> {
         ChartState {
             drawing_area_pos: chart.drawing_area_pos,
@@ -81,14 +78,14 @@ where
     }
 }
 
-impl<'e, CT: CoordTranslate + Clone> ChartContext<'e, CT> {
+impl<'e, CT: Clone> ChartContext<'e, CT> {
     /// Make the chart context, do not consume the chart context and clone the coordinate spec
     pub fn to_chart_state(&self) -> ChartState<CT> {
         self.into()
     }
 }
 
-impl<CT: CoordTranslate> ChartState<CT> {
+impl<CT> ChartState<CT> {
     /// Restore the chart context on the given drawing area
     ///
     /// - `area`: The given drawing area where we want to restore the chart context

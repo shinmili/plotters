@@ -1,5 +1,4 @@
 use super::ChartContext;
-use crate::coord::CoordTranslate;
 use crate::drawing::DrawingAreaError;
 use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
 use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
@@ -122,7 +121,7 @@ impl SeriesLabelPosition {
 }
 
 /// The struct to specify the series label of a target chart context
-pub struct SeriesLabelStyle<'b, 'e, CT: CoordTranslate> {
+pub struct SeriesLabelStyle<'b, 'e, CT> {
     target: &'b mut ChartContext<'e, CT>,
     position: SeriesLabelPosition,
     legend_area_size: u32,
@@ -132,7 +131,7 @@ pub struct SeriesLabelStyle<'b, 'e, CT: CoordTranslate> {
     margin: u32,
 }
 
-impl<'b, 'e, CT: CoordTranslate> SeriesLabelStyle<'b, 'e, CT> {
+impl<'b, 'e, CT> SeriesLabelStyle<'b, 'e, CT> {
     pub(super) fn new(target: &'b mut ChartContext<'e, CT>) -> Self {
         Self {
             target,

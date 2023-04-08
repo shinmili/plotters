@@ -22,7 +22,7 @@ Any plot/chart is abstracted as this type, and any data series can be placed to 
 
 See [`crate::series::LineSeries`] and [`ChartContext::configure_series_labels()`] for more information and examples
 */
-pub struct ChartContext<'e, CT: CoordTranslate> {
+pub struct ChartContext<'e, CT> {
     pub(crate) x_label_area: [Option<DrawingArea<Shift>>; 2],
     pub(crate) y_label_area: [Option<DrawingArea<Shift>>; 2],
     pub(crate) drawing_area: DrawingArea<CT>,
@@ -38,7 +38,7 @@ impl<'e, CT: ReverseCoordTranslate> ChartContext<'e, CT> {
     }
 }
 
-impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
+impl<'e, CT> ChartContext<'e, CT> {
     /**
     Configure the styles for drawing series labels in the chart
 
@@ -81,7 +81,9 @@ impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
     pub fn as_coord_spec(&self) -> &CT {
         self.drawing_area.as_coord_spec()
     }
+}
 
+impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
     // TODO: All draw_series_impl is overly strict about lifetime, because we don't have stable HKT,
     //       what we can ensure is for all lifetime 'b the element reference &'b E is a iterator
     //       of points reference with the same lifetime.
