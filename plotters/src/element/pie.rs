@@ -1,8 +1,10 @@
 use crate::{
-    element::{Drawable, PointCollection},
+    coord::CoordTranslate,
+    drawing::Rect,
+    element::Drawable,
     style::{RGBColor, TextStyle, BLACK},
 };
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind, IntoFont};
+use plotters_backend::{DrawingBackend, DrawingErrorKind, IntoFont};
 use std::{error::Error, f64::consts::PI, fmt::Display};
 
 #[derive(Debug)]
@@ -93,10 +95,11 @@ impl<'a, Label: Display> Pie<'a, (i32, i32), Label> {
     }
 }
 
-impl<'a, Label: Display> Drawable for Pie<'a, (i32, i32), Label> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, Label: Display> Drawable<(i32, i32)> for Pie<'a, (i32, i32), Label> {
+    fn draw<CT: CoordTranslate<From = (i32, i32)>, DB: DrawingBackend>(
         &self,
-        _pos: I,
+        _coord_trans: &CT,
+        _clipping_box: &Rect,
         backend: &mut DB,
         _parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
@@ -185,14 +188,6 @@ impl<'a, Label: Display> Drawable for Pie<'a, (i32, i32), Label> {
             backend.draw_text(&label, style.clone().into(), coord)?;
         }
         Ok(())
-    }
-}
-
-impl<'a, Label: Display> PointCollection<'a, (i32, i32)> for &'a Pie<'a, (i32, i32), Label> {
-    type Point = &'a (i32, i32);
-    type IntoIter = std::iter::Once<&'a (i32, i32)>;
-    fn point_iter(self) -> std::iter::Once<&'a (i32, i32)> {
-        std::iter::once(self.center)
     }
 }
 

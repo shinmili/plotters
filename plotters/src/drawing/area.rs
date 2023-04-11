@@ -1,14 +1,13 @@
 use crate::coord::cartesian::{Cartesian2d, MeshLine};
 use crate::coord::ranged1d::{KeyPointHint, Ranged};
 use crate::coord::{CoordTranslate, Shift};
-use crate::element::{CoordMapper, Drawable, PointCollection};
+use crate::element::Drawable;
 use crate::style::text_anchor::{HPos, Pos, VPos};
 use crate::style::{Color, SizeDesc, TextStyle};
 
 /// The abstraction of a drawing area
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 
-use std::borrow::Borrow;
 use std::error::Error;
 use std::iter::{once, repeat};
 use std::ops::Range;
@@ -318,23 +317,18 @@ impl<CT: CoordTranslate> DrawingArea<CT> {
     }
 
     /// Draw an high-level element
-    pub fn draw<'e, DB, E, B>(
-        &self,
-        backend: &mut DB,
+    pub fn draw<'s, 'b, 'e, DB, E>(
+        &'s self,
+        backend: &'b mut DB,
         element: &'e E,
     ) -> Result<(), DrawingAreaError>
     where
         DB: DrawingBackend,
-        B: CoordMapper,
-        &'e E: PointCollection<'e, CT::From, B>,
-        E: Drawable<B>,
+        CT::From: 'e,
+        E: Drawable<CT::From> + 'e,
     {
-        let backend_coords = element.point_iter().into_iter().map(|p| {
-            let b = p.borrow();
-            B::map(&self.coord, b, &self.rect)
-        });
         self.backend_ops(backend, move |b| {
-            element.draw(backend_coords, b, self.dim_in_pixel())
+            element.draw(&self.coord, &self.rect, b, self.dim_in_pixel())
         })
     }
 

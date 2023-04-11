@@ -9,7 +9,7 @@ use crate::coord::{
     CoordTranslate,
 };
 use crate::drawing::DrawingAreaError;
-use crate::element::{EmptyElement, PathElement, Polygon, Text};
+use crate::element::{ComposedElement, PathElement, Polygon, Text};
 use crate::style::{
     text_anchor::{HPos, Pos, VPos},
     ShapeStyle, TextStyle,
@@ -107,7 +107,7 @@ where
                 _ => (),
             }
 
-            let element = EmptyElement::at(logic_pos)
+            let element = ComposedElement::at(logic_pos)
                 + PathElement::new(vec![(0, 0), dir], style)
                 + Text::new(text.to_string(), (dir.0 * 2, dir.1 * 2), font);
             self.plotting_area().draw(backend, &element)?;

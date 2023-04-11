@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             5,
             ShapeStyle::from(&RED).filled(),
             &|coord, size, style| {
-                EmptyElement::at(coord)
+                ComposedElement::at(coord)
                     + Circle::new((0, 0), size, style)
                     + Text::new(format!("{:?}", coord), (0, 15), ("sans-serif", 15))
             },

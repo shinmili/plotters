@@ -1,6 +1,6 @@
 use super::ChartContext;
 use crate::drawing::DrawingAreaError;
-use crate::element::{DynElement, EmptyElement, IntoDynElement, MultiLineText, Rectangle};
+use crate::element::{ComposedElement, DynElement, IntoDynElement, MultiLineText, Rectangle};
 use crate::style::{IntoTextStyle, ShapeStyle, SizeDesc, TextStyle, TRANSPARENT};
 
 use plotters_backend::{
@@ -252,7 +252,7 @@ impl<'b, 'e, CT> SeriesLabelStyle<'b, 'e, CT> {
                 continue;
             }
 
-            funcs.push(draw_func.unwrap_or(&|p: BackendCoord| EmptyElement::at(p).into_dyn()));
+            funcs.push(draw_func.unwrap_or(&|p: BackendCoord| ComposedElement::at(p).into_dyn()));
             label_element.push_line(label_text);
         }
 

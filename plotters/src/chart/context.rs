@@ -5,7 +5,7 @@ use plotters_backend::{BackendCoord, DrawingBackend};
 use crate::chart::{SeriesAnno, SeriesLabelStyle};
 use crate::coord::{CoordTranslate, ReverseCoordTranslate, Shift};
 use crate::drawing::{DrawingArea, DrawingAreaError};
-use crate::element::{CoordMapper, Drawable, PointCollection};
+use crate::element::Drawable;
 
 pub(super) mod cartesian2d;
 pub(super) mod cartesian3d;
@@ -89,16 +89,14 @@ impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
     //       of points reference with the same lifetime.
     //       However, this doesn't work if the coordinate doesn't live longer than the backend,
     //       this is unnecessarily strict
-    pub(crate) fn draw_series_impl<DB, B, E, R, S>(
+    pub(crate) fn draw_series_impl<DB, E, R, S>(
         &mut self,
         backend: &mut DB,
         series: S,
     ) -> Result<(), DrawingAreaError>
     where
         DB: DrawingBackend,
-        B: CoordMapper,
-        for<'b> &'b E: PointCollection<'b, CT::From, B>,
-        E: Drawable<B>,
+        E: Drawable<CT::From>,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {
@@ -119,16 +117,14 @@ impl<'e, CT: CoordTranslate> ChartContext<'e, CT> {
 
     See [`crate::series::LineSeries`] and [`ChartContext::configure_series_labels()`] for more information and examples.
     */
-    pub fn draw_series<DB, B, E, R, S>(
+    pub fn draw_series<DB, E, R, S>(
         &mut self,
         backend: &mut DB,
         series: S,
     ) -> Result<&mut SeriesAnno<'e>, DrawingAreaError>
     where
         DB: DrawingBackend,
-        B: CoordMapper,
-        for<'b> &'b E: PointCollection<'b, CT::From, B>,
-        E: Drawable<B>,
+        E: Drawable<CT::From>,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {

@@ -1,7 +1,11 @@
 use std::marker::PhantomData;
 
-use crate::element::{Drawable, PointCollection};
-use crate::style::ShapeStyle;
+use crate::{
+    coord::CoordTranslate,
+    drawing::Rect,
+    element::{BackendCoordOnly, CoordMapper, Drawable},
+    style::ShapeStyle,
+};
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 
 /**
@@ -171,27 +175,27 @@ impl<K, V> ErrorBar<K, V, ErrorBarOrientH<K, V>> {
     }
 }
 
-impl<'a, K: Clone, V: Clone, O: ErrorBarOrient<K, V>> PointCollection<'a, (O::XType, O::YType)>
-    for &'a ErrorBar<K, V, O>
+impl<'a, K: Clone, V: Clone, O: ErrorBarOrient<K, V>> Drawable<(O::XType, O::YType)>
+    for ErrorBar<K, V, O>
 {
-    type Point = (O::XType, O::YType);
-    type IntoIter = Vec<Self::Point>;
-    fn point_iter(self) -> Self::IntoIter {
-        self.values
-            .iter()
-            .map(|v| O::make_coord(self.key.clone(), v.clone()))
-            .collect()
-    }
-}
-
-impl<K, V, O: ErrorBarOrient<K, V>> Drawable for ErrorBar<K, V, O> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+    fn draw<CT: CoordTranslate<From = (O::XType, O::YType)>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let points: Vec<_> = points.take(3).collect();
+        let points: Vec<_> = self
+            .values
+            .iter()
+            .map(|v| {
+                BackendCoordOnly::map(
+                    coord_trans,
+                    &O::make_coord(self.key.clone(), v.clone()),
+                    clipping_box,
+                )
+            })
+            .collect();
 
         let (from, to) = O::ending_coord(points[0], self.width);
         backend.draw_line(from, to, self.style.into())?;

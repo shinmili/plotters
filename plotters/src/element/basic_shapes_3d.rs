@@ -1,6 +1,6 @@
-use super::{BackendCoordAndZ, Drawable, PointCollection};
-use crate::style::ShapeStyle;
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use super::{BackendCoordAndZ, CoordMapper, Drawable};
+use crate::{coord::CoordTranslate, drawing::Rect, style::ShapeStyle};
+use plotters_backend::{DrawingBackend, DrawingErrorKind};
 
 /**
 Represents a cuboid, a six-faced solid.
@@ -58,24 +58,19 @@ impl<X: Clone, Y: Clone, Z: Clone> Cuboid<X, Y, Z> {
     }
 }
 
-impl<'a, X: 'a, Y: 'a, Z: 'a> PointCollection<'a, (X, Y, Z), BackendCoordAndZ>
-    for &'a Cuboid<X, Y, Z>
-{
-    type Point = &'a (X, Y, Z);
-    type IntoIter = &'a [(X, Y, Z)];
-    fn point_iter(self) -> Self::IntoIter {
-        &self.vert
-    }
-}
-
-impl<X, Y, Z> Drawable<BackendCoordAndZ> for Cuboid<X, Y, Z> {
-    fn draw<I: Iterator<Item = (BackendCoord, i32)>, DB: DrawingBackend>(
+impl<X, Y, Z> Drawable<(X, Y, Z)> for Cuboid<X, Y, Z> {
+    fn draw<CT: CoordTranslate<From = (X, Y, Z)>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let vert: Vec<_> = points.collect();
+        let vert: Vec<_> = self
+            .vert
+            .iter()
+            .map(|p| BackendCoordAndZ::map(coord_trans, p, clipping_box))
+            .collect();
         let mut polygon = vec![];
         for mask in [1, 2, 4].iter().cloned() {
             let mask_a = if mask == 4 { 1 } else { mask * 2 };

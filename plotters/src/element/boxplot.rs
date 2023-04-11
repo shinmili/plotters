@@ -1,8 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::data::Quartiles;
-use crate::element::{Drawable, PointCollection};
-use crate::style::{Color, ShapeStyle, BLACK};
+use super::{BackendCoordOnly, CoordMapper, Drawable};
+use crate::{
+    coord::CoordTranslate,
+    data::Quartiles,
+    drawing::Rect,
+    style::{Color, ShapeStyle, BLACK},
+};
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
 
 /// The boxplot orientation trait
@@ -177,27 +181,21 @@ impl<K, O: BoxplotOrient<K, f32>> Boxplot<K, O> {
     }
 }
 
-impl<'a, K: Clone, O: BoxplotOrient<K, f32>> PointCollection<'a, (O::XType, O::YType)>
-    for &'a Boxplot<K, O>
-{
-    type Point = (O::XType, O::YType);
-    type IntoIter = Vec<Self::Point>;
-    fn point_iter(self) -> Self::IntoIter {
-        self.values
-            .iter()
-            .map(|v| O::make_coord(self.key.clone(), *v))
-            .collect()
-    }
-}
-
-impl<K, O: BoxplotOrient<K, f32>> Drawable for Boxplot<K, O> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, K: Clone, O: BoxplotOrient<K, f32>> Drawable<(O::XType, O::YType)> for Boxplot<K, O> {
+    fn draw<CT: CoordTranslate<From = (O::XType, O::YType)>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let points: Vec<_> = points.take(5).collect();
+        let points = self.values.map(|v| {
+            BackendCoordOnly::map(
+                coord_trans,
+                &O::make_coord(self.key.clone(), v),
+                clipping_box,
+            )
+        });
         if points.len() == 5 {
             let width = f64::from(self.width);
             let moved = |coord| O::with_offset(coord, self.offset);

@@ -4,8 +4,11 @@
 ))]
 use image::{DynamicImage, GenericImageView};
 
-use super::{Drawable, PointCollection};
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use crate::coord::CoordTranslate;
+use crate::drawing::Rect;
+
+use super::{BackendCoordOnly, CoordMapper, Drawable};
+use plotters_backend::{DrawingBackend, DrawingErrorKind};
 
 use plotters_bitmap::bitmap_pixel::{PixelFormat, RGBPixel};
 
@@ -204,25 +207,16 @@ impl<'a, Coord> From<(Coord, DynamicImage)> for BitMapElement<'a, Coord, BGRXPix
     }
 }
 
-impl<'a, 'b, Coord> PointCollection<'a, Coord> for &'a BitMapElement<'b, Coord> {
-    type Point = &'a Coord;
-    type IntoIter = std::iter::Once<&'a Coord>;
-    fn point_iter(self) -> Self::IntoIter {
-        std::iter::once(&self.pos)
-    }
-}
-
-impl<'a, Coord> Drawable for BitMapElement<'a, Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, Coord> Drawable<Coord> for BitMapElement<'a, Coord> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        if let Some((x, y)) = points.next() {
-            // TODO: convert the pixel format when needed
-            return backend.blit_bitmap((x, y), self.size, self.image.as_ref());
-        }
-        Ok(())
+        let pos = BackendCoordOnly::map(coord_trans, &self.pos, clipping_box);
+        // TODO: convert the pixel format when needed
+        backend.blit_bitmap(pos, self.size, self.image.as_ref())
     }
 }

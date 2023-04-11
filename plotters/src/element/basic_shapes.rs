@@ -1,11 +1,15 @@
-use super::{Drawable, PointCollection};
-use crate::style::{Color, ShapeStyle, SizeDesc};
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use super::{BackendCoordOnly, CoordMapper, Drawable};
+use crate::{
+    coord::CoordTranslate,
+    drawing::Rect,
+    style::{Color, ShapeStyle, SizeDesc},
+};
+use plotters_backend::{DrawingBackend, DrawingErrorKind};
 
 /**
 An element representing a single pixel.
 
-See [`crate::element::EmptyElement`] for more information and examples.
+See [`crate::element::ComposedElement`] for more information and examples.
 */
 pub struct Pixel<Coord> {
     pos: Coord,
@@ -16,7 +20,7 @@ impl<Coord> Pixel<Coord> {
     /**
     Creates a new pixel.
 
-    See [`crate::element::EmptyElement`] for more information and examples.
+    See [`crate::element::ComposedElement`] for more information and examples.
     */
     pub fn new<P: Into<Coord>, S: Into<ShapeStyle>>(pos: P, style: S) -> Self {
         Self {
@@ -26,25 +30,17 @@ impl<Coord> Pixel<Coord> {
     }
 }
 
-impl<'a, Coord> PointCollection<'a, Coord> for &'a Pixel<Coord> {
-    type Point = &'a Coord;
-    type IntoIter = std::iter::Once<&'a Coord>;
-    fn point_iter(self) -> Self::IntoIter {
-        std::iter::once(&self.pos)
-    }
-}
-
-impl<Coord> Drawable for Pixel<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<Coord> Drawable<Coord> for Pixel<Coord> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        if let Some((x, y)) = points.next() {
-            return backend.draw_pixel((x, y), self.style.color.to_backend_color());
-        }
-        Ok(())
+        let pos = BackendCoordOnly::map(coord_trans, &self.pos, clipping_box);
+        coord_trans.translate(&self.pos);
+        backend.draw_pixel(pos, self.style.color.to_backend_color())
     }
 }
 
@@ -93,22 +89,19 @@ impl<Coord> PathElement<Coord> {
     }
 }
 
-impl<'a, Coord> PointCollection<'a, Coord> for &'a PathElement<Coord> {
-    type Point = &'a Coord;
-    type IntoIter = &'a [Coord];
-    fn point_iter(self) -> &'a [Coord] {
-        &self.points
-    }
-}
-
-impl<Coord> Drawable for PathElement<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<Coord> Drawable<Coord> for PathElement<Coord> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let points: Vec<_> = points.collect();
+        let points: Vec<_> = self
+            .points
+            .iter()
+            .map(|p| BackendCoordOnly::map(coord_trans, p, clipping_box))
+            .collect();
         backend.draw_path(&points[..], self.style.into())
     }
 }
@@ -172,32 +165,27 @@ impl<Coord> Rectangle<Coord> {
     }
 }
 
-impl<'a, Coord> PointCollection<'a, Coord> for &'a Rectangle<Coord> {
-    type Point = &'a Coord;
-    type IntoIter = &'a [Coord];
-    fn point_iter(self) -> &'a [Coord] {
-        &self.points
-    }
-}
-
-impl<Coord> Drawable for Rectangle<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<Coord> Drawable<Coord> for Rectangle<Coord> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        match (points.next(), points.next()) {
-            (Some(a), Some(b)) => {
-                let (mut a, mut b) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
-                a.1 += self.margin.0 as i32;
-                b.1 -= self.margin.1 as i32;
-                a.0 += self.margin.2 as i32;
-                b.0 -= self.margin.3 as i32;
-                backend.draw_rect(a, b, self.style.into(), self.style.filled)
-            }
-            _ => Ok(()),
-        }
+        let points: Vec<_> = self
+            .points
+            .iter()
+            .map(|p| BackendCoordOnly::map(coord_trans, p, clipping_box))
+            .collect();
+        let a = points[0];
+        let b = points[1];
+        let (mut a, mut b) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
+        a.1 += self.margin.0 as i32;
+        b.1 -= self.margin.1 as i32;
+        a.0 += self.margin.2 as i32;
+        b.0 -= self.margin.3 as i32;
+        backend.draw_rect(a, b, self.style.into(), self.style.filled)
     }
 }
 
@@ -273,26 +261,17 @@ impl<Coord, Size: SizeDesc> Circle<Coord, Size> {
     }
 }
 
-impl<'a, Coord, Size: SizeDesc> PointCollection<'a, Coord> for &'a Circle<Coord, Size> {
-    type Point = &'a Coord;
-    type IntoIter = std::iter::Once<&'a Coord>;
-    fn point_iter(self) -> std::iter::Once<&'a Coord> {
-        std::iter::once(&self.center)
-    }
-}
-
-impl<Coord, Size: SizeDesc> Drawable for Circle<Coord, Size> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<Coord, Size: SizeDesc> Drawable<Coord> for Circle<Coord, Size> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         ps: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        if let Some((x, y)) = points.next() {
-            let size = self.size.in_pixels(&ps).max(0) as u32;
-            return backend.draw_circle((x, y), size, self.style.into(), self.style.filled);
-        }
-        Ok(())
+        let center = BackendCoordOnly::map(coord_trans, &self.center, clipping_box);
+        let size = self.size.in_pixels(&ps).max(0) as u32;
+        backend.draw_circle(center, size, self.style.into(), self.style.filled)
     }
 }
 
@@ -338,22 +317,19 @@ impl<Coord> Polygon<Coord> {
     }
 }
 
-impl<'a, Coord> PointCollection<'a, Coord> for &'a Polygon<Coord> {
-    type Point = &'a Coord;
-    type IntoIter = &'a [Coord];
-    fn point_iter(self) -> &'a [Coord] {
-        &self.points
-    }
-}
-
-impl<Coord> Drawable for Polygon<Coord> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<Coord> Drawable<Coord> for Polygon<Coord> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let points: Vec<_> = points.collect();
+        let points: Vec<_> = self
+            .points
+            .iter()
+            .map(|p| BackendCoordOnly::map(coord_trans, p, clipping_box))
+            .collect();
         backend.fill_polygon(&points[..], self.style.color.to_backend_color().into())
     }
 }

@@ -535,7 +535,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|(row, (color, &name))| {
                     let row = row as f32;
                     let col = col as f32;
-                    EmptyElement::at((col, row))
+                    ComposedElement::at((col, row))
                         + Circle::new((0, 0), 15, color.filled())
                         + Text::new(name, (0, 16), &label_style)
                 }),

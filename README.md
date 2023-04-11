@@ -410,7 +410,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     let dot_and_label = |x: f32, y: f32| {
-        return EmptyElement::at((x, y))
+        return ComposedElement::at((x, y))
             + Circle::new((0, 0), 3, ShapeStyle::from(&BLACK).filled())
             + Text::new(
                 format!("({:.2},{:.2})", x, y),
@@ -473,7 +473,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         5,
         &RED,
         &|c, s, st| {
-            return EmptyElement::at(c)    // We want to construct a composed element on-the-fly
+            return ComposedElement::at(c)    // We want to construct a composed element on-the-fly
             + Circle::new((0,0),s,st.filled()) // At this point, the new pixel coordinate is established
             + Text::new(format!("{:?}", c), (10, 0), ("sans-serif", 10).into_font());
         },

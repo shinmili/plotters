@@ -11,41 +11,32 @@
 
     ## Implementing your own element
     You can also define your own element, `CandleStick` is a good sample of implementing complex
-    element. There are two trait required for an element:
+    element. There is a trait required for an element:
 
-    - `PointCollection` - the struct should be able to return an iterator of key-points under guest coordinate
     - `Drawable` - the struct is a pending drawing operation on a drawing backend with pixel-based coordinate
 
     An example of element that draws a red "X" in a red rectangle onto the backend:
 
     ```rust
     use std::iter::{Once, once};
-    use plotters::element::{PointCollection, Drawable};
+    use plotters::element::{BackendCoordOnly, CoordMapper, Drawable};
     use plotters_backend::{BackendCoord, DrawingErrorKind, BackendStyle};
     use plotters::style::IntoTextStyle;
     use plotters::prelude::*;
 
     // Any example drawing a red X
-    struct RedBoxedX((i32, i32));
-
-    // For any reference to RedX, we can convert it into an iterator of points
-    impl <'a> PointCollection<'a, (i32, i32)> for &'a RedBoxedX {
-        type Point = &'a (i32, i32);
-        type IntoIter = Once<&'a (i32, i32)>;
-        fn point_iter(self) -> Self::IntoIter {
-            once(&self.0)
-        }
-    }
+    struct RedBoxedX(BackendCoord);
 
     // How to actually draw this element
-    impl Drawable for RedBoxedX {
-        fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+    impl Drawable<BackendCoord> for RedBoxedX {
+        fn draw<CT: CoordTranslate<From = BackendCoord>, DB: DrawingBackend>(
             &self,
-            mut pos: I,
+            coord_trans: &CT,
+            clipping_box: &Rect,
             backend: &mut DB,
             _: (u32, u32),
         ) -> Result<(), DrawingErrorKind> {
-            let pos = pos.next().unwrap();
+            let pos = BackendCoordOnly::map(coord_trans, &self.0, clipping_box);
             backend.draw_rect(pos, (pos.0 + 10, pos.1 + 12), RED.into(), false)?;
             let text_style = ("sans-serif", 20).into_text_style(&backend.get_size()).color(&RED).into();
             backend.draw_text("X", text_style, pos)
@@ -77,7 +68,7 @@
         let font:FontDesc = ("sans-serif", 20).into();
         root.draw(
             &mut backend,
-            &(EmptyElement::at((200, 200))
+            &(ComposedElement::at((200, 200))
                 + Text::new("X", (0, 0), &"sans-serif".into_font().resize(20.0).color(&RED))
                 + Rectangle::new([(0,0), (10, 12)], &RED)
             ))?;
@@ -152,7 +143,6 @@
     ![](https://plotters-rs.github.io/plotters-doc-data/element-3.png)
 */
 use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
-use std::borrow::Borrow;
 
 mod basic_shapes;
 pub use basic_shapes::*;
@@ -167,7 +157,7 @@ mod points;
 pub use points::*;
 
 mod composable;
-pub use composable::{ComposedElement, EmptyElement};
+pub use composable::ComposedElement;
 
 #[cfg(feature = "candlestick")]
 mod candlestick;
@@ -190,6 +180,7 @@ mod image;
 pub use self::image::BitMapElement;
 
 mod dynelem;
+pub(crate) use dynelem::DynDrawable;
 pub use dynelem::{DynElement, IntoDynElement};
 
 mod pie;
@@ -198,51 +189,13 @@ pub use pie::Pie;
 use crate::coord::CoordTranslate;
 use crate::drawing::Rect;
 
-/// A type which is logically a collection of points, under any given coordinate system.
-/// Note: Ideally, a point collection trait should be any type of which coordinate elements can be
-/// iterated. This is similar to `iter` method of many collection types in std.
-///
-/// ```ignore
-/// trait PointCollection<Coord> {
-///     type PointIter<'a> : Iterator<Item = &'a Coord>;
-///     fn iter(&self) -> PointIter<'a>;
-/// }
-/// ```
-///
-/// However,
-/// [Generic Associated Types](https://github.com/rust-lang/rfcs/blob/master/text/1598-generic_associated_types.md)
-/// is far away from stablize.
-/// So currently we have the following workaround:
-///
-/// Instead of implement the PointCollection trait on the element type itself, it implements on the
-/// reference to the element. By doing so, we now have a well-defined lifetime for the iterator.
-///
-/// In addition, for some element, the coordinate is computed on the fly, thus we can't hard-code
-/// the iterator's return type is `&'a Coord`.
-/// `Borrow` trait seems to strict in this case, since we don't need the order and hash
-/// preservation properties at this point. However, `AsRef` doesn't work with `Coord`
-///
-/// This workaround also leads overly strict lifetime bound on `ChartContext::draw_series`.
-///
-/// TODO: Once GAT is ready on stable Rust, we should simplify the design.
-///
-pub trait PointCollection<'a, Coord, CM = BackendCoordOnly> {
-    /// The item in point iterator
-    type Point: Borrow<Coord> + 'a;
-
-    /// The point iterator
-    type IntoIter: IntoIterator<Item = Self::Point>;
-
-    /// framework to do the coordinate mapping
-    fn point_iter(self) -> Self::IntoIter;
-}
 /// The trait indicates we are able to draw it on a drawing area
-pub trait Drawable<CM: CoordMapper = BackendCoordOnly> {
-    /// Actually draws the element. The key points is already translated into the
-    /// image coordinate and can be used by DC directly
-    fn draw<I: Iterator<Item = CM::Output>, DB: DrawingBackend>(
+pub trait Drawable<Coord> {
+    /// Actually draws the element.
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        pos: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         parent_dim: (u32, u32),
     ) -> Result<(), DrawingErrorKind>;

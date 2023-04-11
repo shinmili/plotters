@@ -1,5 +1,4 @@
 use plotters_backend::BackendCoord;
-use std::ops::Deref;
 
 /// The trait that translates some customized object to the backend coordinate
 pub trait CoordTranslate {
@@ -15,14 +14,15 @@ pub trait CoordTranslate {
     }
 }
 
-impl<C, T> CoordTranslate for T
-where
-    C: CoordTranslate,
-    T: Deref<Target = C>,
-{
-    type From = C::From;
+impl<'a, T> CoordTranslate for &'a dyn CoordTranslate<From = T> {
+    type From = T;
+
     fn translate(&self, from: &Self::From) -> BackendCoord {
-        self.deref().translate(from)
+        (**self).translate(from)
+    }
+
+    fn depth(&self, from: &Self::From) -> i32 {
+        (**self).depth(from)
     }
 }
 

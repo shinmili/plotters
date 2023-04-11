@@ -4,9 +4,9 @@
 
 use std::cmp::Ordering;
 
-use crate::element::{Drawable, PointCollection};
-use crate::style::ShapeStyle;
-use plotters_backend::{BackendCoord, DrawingBackend, DrawingErrorKind};
+use super::{BackendCoordOnly, CoordMapper, Drawable};
+use crate::{coord::CoordTranslate, drawing::Rect, style::ShapeStyle};
+use plotters_backend::{DrawingBackend, DrawingErrorKind};
 
 /// The candlestick data point element
 pub struct CandleStick<X, Y: PartialOrd> {
@@ -61,40 +61,34 @@ impl<X: Clone, Y: PartialOrd> CandleStick<X, Y> {
     }
 }
 
-impl<'a, X: 'a, Y: PartialOrd + 'a> PointCollection<'a, (X, Y)> for &'a CandleStick<X, Y> {
-    type Point = &'a (X, Y);
-    type IntoIter = &'a [(X, Y)];
-    fn point_iter(self) -> &'a [(X, Y)] {
-        &self.points
-    }
-}
-
-impl<X, Y: PartialOrd> Drawable for CandleStick<X, Y> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, X, Y: PartialOrd> Drawable<(X, Y)> for CandleStick<X, Y> {
+    fn draw<CT: CoordTranslate<From = (X, Y)>, DB: DrawingBackend>(
         &self,
-        points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        let mut points: Vec<_> = points.take(4).collect();
-        if points.len() == 4 {
-            let fill = self.style.filled;
-            if points[0].1 > points[3].1 {
-                points.swap(0, 3);
-            }
-            let (l, r) = (
-                self.width as i32 / 2,
-                self.width as i32 - self.width as i32 / 2,
-            );
-
-            backend.draw_line(points[0], points[1], self.style.into())?;
-            backend.draw_line(points[2], points[3], self.style.into())?;
-
-            points[0].0 -= l;
-            points[3].0 += r;
-
-            backend.draw_rect(points[0], points[3], self.style.into(), fill)?;
+        let mut points: Vec<_> = self
+            .points
+            .iter()
+            .map(|p| BackendCoordOnly::map(coord_trans, p, clipping_box))
+            .collect();
+        let fill = self.style.filled;
+        if points[0].1 > points[3].1 {
+            points.swap(0, 3);
         }
-        Ok(())
+        let (l, r) = (
+            self.width as i32 / 2,
+            self.width as i32 - self.width as i32 / 2,
+        );
+
+        backend.draw_line(points[0], points[1], self.style.into())?;
+        backend.draw_line(points[2], points[3], self.style.into())?;
+
+        points[0].0 -= l;
+        points[3].0 += r;
+
+        backend.draw_rect(points[0], points[3], self.style.into(), fill)
     }
 }

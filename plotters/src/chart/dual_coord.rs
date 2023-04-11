@@ -12,7 +12,7 @@ use crate::coord::{ReverseCoordTranslate, Shift};
 
 use crate::drawing::DrawingArea;
 use crate::drawing::DrawingAreaError;
-use crate::element::{Drawable, PointCollection};
+use crate::element::Drawable;
 
 use plotters_backend::{BackendCoord, DrawingBackend};
 
@@ -180,8 +180,7 @@ impl<'e, X: Ranged, Y: Ranged, SX: Ranged, SY: Ranged>
     ) -> Result<&mut SeriesAnno<'e>, DrawingAreaError>
     where
         DB: DrawingBackend,
-        for<'b> &'b E: PointCollection<'b, (SX::ValueType, SY::ValueType)>,
-        E: Drawable,
+        E: Drawable<(SX::ValueType, SY::ValueType)>,
         R: Borrow<E>,
         S: IntoIterator<Item = R>,
     {

@@ -1,8 +1,8 @@
 use std::i32;
 use std::{borrow::Borrow, error::Error};
 
-use super::{Drawable, PointCollection};
-use crate::style::TextStyle;
+use super::{BackendCoordOnly, CoordMapper, Drawable};
+use crate::{coord::CoordTranslate, drawing::Rect, style::TextStyle};
 use plotters_backend::{
     BackendCoord, DrawingBackend, DrawingErrorKind, FontBackend, FontData, LayoutBox,
 };
@@ -30,25 +30,16 @@ impl<'a, Coord, T: Borrow<str>> Text<'a, Coord, T> {
     }
 }
 
-impl<'b, 'a, Coord: 'a, T: Borrow<str> + 'a> PointCollection<'a, Coord> for &'a Text<'b, Coord, T> {
-    type Point = &'a Coord;
-    type IntoIter = std::iter::Once<&'a Coord>;
-    fn point_iter(self) -> Self::IntoIter {
-        std::iter::once(&self.coord)
-    }
-}
-
-impl<'a, Coord: 'a, T: Borrow<str>> Drawable for Text<'a, Coord, T> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, Coord, T: Borrow<str>> Drawable<Coord> for Text<'a, Coord, T> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        if let Some(a) = points.next() {
-            return backend.draw_text(self.text.borrow(), self.style.clone().into(), a);
-        }
-        Ok(())
+        let pos = BackendCoordOnly::map(coord_trans, &self.coord, clipping_box);
+        backend.draw_text(self.text.borrow(), self.style.clone().into(), pos)
     }
 }
 
@@ -185,27 +176,17 @@ impl<'a, Coord> MultiLineText<'a, Coord, String> {
     }
 }
 
-impl<'b, 'a, Coord: 'a, T: Borrow<str> + 'a> PointCollection<'a, Coord>
-    for &'a MultiLineText<'b, Coord, T>
-{
-    type Point = &'a Coord;
-    type IntoIter = std::iter::Once<&'a Coord>;
-    fn point_iter(self) -> Self::IntoIter {
-        std::iter::once(&self.coord)
-    }
-}
-
-impl<'a, Coord: 'a, T: Borrow<str>> Drawable for MultiLineText<'a, Coord, T> {
-    fn draw<I: Iterator<Item = BackendCoord>, DB: DrawingBackend>(
+impl<'a, Coord, T: Borrow<str>> Drawable<Coord> for MultiLineText<'a, Coord, T> {
+    fn draw<CT: CoordTranslate<From = Coord>, DB: DrawingBackend>(
         &self,
-        mut points: I,
+        coord_trans: &CT,
+        clipping_box: &Rect,
         backend: &mut DB,
         _: (u32, u32),
     ) -> Result<(), DrawingErrorKind> {
-        if let Some(a) = points.next() {
-            for (point, text) in self.layout_lines(a).zip(self.lines.iter()) {
-                backend.draw_text(text.borrow(), self.style.clone().into(), point)?;
-            }
+        let a = BackendCoordOnly::map(coord_trans, &self.coord, clipping_box);
+        for (point, text) in self.layout_lines(a).zip(self.lines.iter()) {
+            backend.draw_text(text.borrow(), self.style.clone().into(), point)?;
         }
         Ok(())
     }

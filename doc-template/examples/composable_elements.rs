@@ -1,5 +1,5 @@
-use plotters::prelude::*;
 use plotters::coord::types::RangedCoordf32;
+use plotters::prelude::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = BitMapBackend::new("plotters-doc-data/4.png", (640, 480)).into_drawing_area();
@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ));
 
     let dot_and_label = |x: f32, y: f32| {
-        return EmptyElement::at((x, y))
+        return ComposedElement::at((x, y))
             + Circle::new((0, 0), 3, ShapeStyle::from(&BLACK).filled())
             + Text::new(
                 format!("({:.2},{:.2})", x, y),
